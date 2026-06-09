@@ -26,17 +26,20 @@ jobs:
       - name: Install Node.js runtime environment
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Setup pnpm & Warm Virtual Cache Store
-        uses: pnpm/action-setup@v3
+        uses: pnpm/action-setup@v4 # Upgraded to v4 for native lockfile-optimized caching features
         with:
           version: ^11.0.9
           run_install: false
 
-      - name: Locate pnpm Store
-        shell: bash
-        run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+      # Built-in optimized caching configuration provided directly by setup-node
+      - name: Expose and Bind Global Dependency Cache Keys
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
 
       - name: Synchronize Local Project Dependencies
         run: pnpm install --frozen-lockfile
