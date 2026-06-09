@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "tsx watch ./src/index.ts",
     "start": "node ./dist/index.js",
-    "build": "tsc . --outDir ./dist"
+    "build": "tsc -p tsconfig.json --noEmit false --outDir ./dist"
   },
   "keywords": [
     "Zentry",
