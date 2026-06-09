@@ -5,7 +5,9 @@
   "main": "./src/index.ts",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "tsx watch ./src/index.ts",
+    "start": "node ./dist/index.js",
+    "build": "tsc . --outDir ./dist"
   },
   "keywords": [
     "Zentry",
@@ -17,6 +19,21 @@
   "author": "Kavinda Rathnayake",
   "license": "MIT",
   "devDependencies": {
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.9.2",
     "tsx": "^4.22.4"
+  },
+  "dependencies": {
+    "@zentry/database": "workspace:*",
+    "@zentry/types": "workspace:*",
+    "@zentry/validation": "workspace:*",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "kafkajs": "^2.2.4",
+    "redis": "^6.0.0"
   }
 }

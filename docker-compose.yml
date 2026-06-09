@@ -40,6 +40,17 @@ services:
     volumes:
       - identity_db_data:/var/lib/postgresql/data
 
+  session-cache:
+    image: redis:8.6.4-alpine
+    container_name: zentry-redis
+    restart: always
+    ports:
+      - '6379:6379'
+    command: redis-server --appendonly yes # Enables AOF persistence for crash resilience
+    volumes:
+      - redis_data:/data
+
 volumes:
   identity_db_data:
   kafka_data:
+  redis_data:
