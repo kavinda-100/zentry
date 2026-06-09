@@ -31,7 +31,7 @@ jobs:
       - name: Setup pnpm & Warm Virtual Cache Store
         uses: pnpm/action-setup@v4 # Upgraded to v4 for native lockfile-optimized caching features
         with:
-          version: ^11.0.9
+          version: 11.0.9
           run_install: false
 
       # Built-in optimized caching configuration provided directly by setup-node
