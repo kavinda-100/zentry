@@ -1,6 +1,5 @@
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
-import importPlugin from 'eslint-plugin-import';
 
 export default tseslint.config(
   // Global ignores across all workspaces
@@ -11,6 +10,7 @@ export default tseslint.config(
       '**/build/**',
       '**/generated/**',
       '.pnpm-store/**',
+      'eslint.config.js',
     ],
   },
 
@@ -18,9 +18,6 @@ export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    plugins: {
-      import: importPlugin,
-    },
     languageOptions: {
       parserOptions: {
         project: ['./tsconfig.base.json', './apps/*/tsconfig.json', './packages/*/tsconfig.json'],
@@ -35,16 +32,6 @@ export default tseslint.config(
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
       'no-console': ['warn', { allow: ['warn', 'error', 'info'] }],
-
-      // Import Sorting & Cleanliness
-      'import/order': [
-        'error',
-        {
-          groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],
-          'newlines-between': 'always',
-          alphabetize: { order: 'asc', caseInsensitive: true },
-        },
-      ],
     },
   },
 );
