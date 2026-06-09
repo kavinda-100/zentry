@@ -1,0 +1,45 @@
+services:
+  kafka:
+    image: apache/kafka:latest
+    container_name: zentry-kafka
+    ports:
+      - '9092:9092'
+    environment:
+      # KRaft settings for official Apache image
+      - KAFKA_NODE_ID=1
+      - KAFKA_PROCESS_ROLES=broker,controller
+      - KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@127.0.0.1:9093
+      - KAFKA_OFFICIAL_IMAGE_CONFIG_FORMAT=true
+      # Tells Kafka there is only 1 node, so don't try to replicate data
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+      # Speed up group coordinator startup
+      - KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS=0
+      # Ensure the internal listener is defined
+      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      # Enable auto-create topics
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+
+  identity-db:
+    image: postgres:17-alpine
+    container_name: zentry-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: zentry-db
+    ports:
+      - '5433:5432'
+    volumes:
+      - identity_db_data:/var/lib/postgresql/data
+
+volumes:
+  identity_db_data:
+  kafka_data:

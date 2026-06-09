@@ -1,0 +1,20 @@
+{
+  "name": "zentry",
+  "description": "Zentry is a production-grade, high-performance, multi-tenant Identity Provider (IdP) built as an educational blueprint for secure, \nhigh-throughput session topologies.",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["Zentry", "identity", "auth", "idp", "multi-tenant"],
+  "author": "Kavinda Rathnayake",
+  "license": "MIT",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^11.0.9",
+      "onFail": "download"
+    }
+  }
+}

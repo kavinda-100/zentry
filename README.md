@@ -48,6 +48,7 @@ zentry/
 ├── pnpm-workspace.yaml      # Monorepo configuration
 ├── package.json             # Root package definition
 ├── tsconfig.base.json       # Root typescript configuration
+├── docker-compose.yml       # Docker Compose configuration
 ├── README.md                # Project Blueprint & Architecture Map
 └── AGENT.md                 # Agentic workflow rules and execution context
 ```
