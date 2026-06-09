@@ -2,6 +2,7 @@ import express from 'express';
 import type { Request, Response } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import { pinoHttp } from 'pino-http';
 import { env } from './lib/env';
 import { redis } from './lib/redis';
 import { prisma } from '@zentry/database';
@@ -9,6 +10,7 @@ import mainRouterV1 from './routes';
 import { errorHandler } from './middleware/errorHandler';
 import { ErrorResponse } from './utils/responseHandles';
 import { StatusCodes } from './utils/statusCodes';
+import { logger } from './utils/logger';
 
 const app = express();
 
@@ -22,6 +24,17 @@ app.use(
 app.use(cookieParser(env.COOKIE_SECRET));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+// Logging Middleware
+app.use(
+  pinoHttp({
+    logger,
+    // Custom metadata bindings (optional)
+    serializers: {
+      req: (req) => ({ method: req.method, url: req.url, ip: req.remoteAddress }),
+      res: (res) => ({ statusCode: res.statusCode }),
+    },
+  }),
+);
 
 // Routes
 app.use('/api/v1', mainRouterV1);
@@ -36,13 +49,13 @@ app.use(errorHandler);
 
 async function startServer() {
   await redis.connect();
-  console.info('🚀 Connected to high-performance Redis cache layer.');
+  logger.info('🚀 Connected to Redis cache layer.');
 
   await prisma.$connect();
-  console.info('Connected to PostgreSQL database.');
+  logger.info('Connected to PostgreSQL database.');
 
   app.listen(env.PORT, () => {
-    console.info(
+    logger.info(
       `⚡ [Zentry IdP] Service online at http://localhost:${env.PORT} in [${env.NODE_ENV}] state.`,
     );
   });
@@ -51,20 +64,20 @@ async function startServer() {
 // graceful shutdown
 process.on('SIGINT', async () => {
   try {
-    console.info('SIGINT signal received: closing HTTP server.');
+    logger.info('SIGINT signal received: closing HTTP server.');
     await redis.disconnect();
-    console.info('Disconnected from high-performance Redis cache layer.');
+    logger.info('Disconnected from high-performance Redis cache layer.');
     await prisma.$disconnect();
-    console.info('Disconnected from PostgreSQL database.');
+    logger.info('Disconnected from PostgreSQL database.');
     process.exit(0);
   } catch (err) {
-    console.error('Error during graceful shutdown:', err);
+    logger.error({ err }, 'Error during graceful shutdown:');
     process.exit(1);
   }
 });
 
 // Start the server
 startServer().catch((err) => {
-  console.error('Critical service failure during initialization phase:', err);
+  logger.error({ err }, 'Critical service failure during initialization phase:');
   process.exit(1);
 });
