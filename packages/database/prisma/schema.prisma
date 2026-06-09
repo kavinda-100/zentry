@@ -1,0 +1,133 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ProviderType {
+  CREDENTIAL
+  OAUTH
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+// Global Zentry Core Users (Single Identity Profile)
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  firstName     String
+  lastName      String
+  emailVerified Boolean        @default(false)
+  imageUrl      String?
+  accounts      Account[]
+  sessions      Session[] // Active global/personal sessions
+  organizations Organization[] // if create an organization
+  memberships   Membership[] // Connects a user to many organizations
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+}
+
+// Organizations Matrix
+model Organization {
+  id          String       @id @default(uuid())
+  name        String
+  rootAdminId String
+  user        User         @relation(fields: [rootAdminId], references: [id])
+  logoUrl     String?
+  memberships Membership[] // List of all members in this organization
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([rootAdminId])
+}
+
+// Membership Junction (Role-Based Access Control + Context per Tenant)
+model Membership {
+  id             String       @id @default(uuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  role        Role    @default(MEMBER)
+  isBanned    Boolean @default(false)
+  permissions Json? // permission objects eg:
+  /**
+   * {
+   * "role": "ADMIN",
+   * "scopes": [
+   * "org:read",
+   * "org:update",
+   * "members:create",
+   * "members:read",
+   * "members:update",
+   * "members:delete",
+   * "billing:read"
+   * ]
+   * }
+   */
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Crucial: A user can only have ONE unique membership entry per organization!
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+}
+
+// Centralized Identity Authentication Sources
+model Account {
+  id                    String       @id @default(uuid())
+  userId                String
+  user                  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId             String // Provider specific ID (e.g. google sub id)
+  providerType          ProviderType
+  accessToken           String?
+  refreshToken          String?
+  accessTokenExpiresAt  DateTime? // Changed to nullable as credential logins do not use these
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  idToken               String?
+  hashedPassword        String? // hash password for CREDENTIAL auth type
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([providerType, accountId])
+}
+
+// Active State Sessions (Unified Database Cache)
+model Session {
+  id        String   @id @default(uuid())
+  token     String   @unique // The high-entropy opaque token sent to client
+  expiresAt DateTime // Swapped to native DateTime for clean query sweeps
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Active tenant routing state context
+  organizationId String? // Optional: Null if logged into personal profile, set if scoped to an Org
+  permissions    Json? // Frozen snapshot of user permissions at session generation for rapid cache hit syncing
+  ipAddress      String?
+  userAgent      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([token])
+  @@index([userId])
+}
