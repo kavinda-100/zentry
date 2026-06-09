@@ -1,24 +1,24 @@
 # Zentry (Multi-Tenant Identity & Auth Provider)
 
-Zentry is a production-grade, high-performance, multi-tenant Identity Provider (IdP) built as an educational blueprint for secure, 
-high-throughput session topologies. It mirrors advanced patterns found in modern enterprise auth systems like Clerk, focusing heavily on 
+Zentry is a production-grade, high-performance, multi-tenant Identity Provider (IdP) built as an educational blueprint for secure,
+high-throughput session topologies. It mirrors advanced patterns found in modern enterprise auth systems like Clerk, focusing heavily on
 live-revocation architecture, tenant isolation, and asynchronous message queues.
 
 ## 🚀 Architectural Pillars
 
 1. **Stateful Session Topology ("Live-Revoke"):**
-    - Opaque high-entropy tokens sent via `HttpOnly`, `Secure`, `SameSite=Lax` cookies.
-    - Central low-latency session validation powered by **Redis**.
-    - Immediate privilege revocation, user banning, and active session purging without waiting for JWT expiration.
-    - Database durability backed by **PostgreSQL** via **Prisma ORM**.
+   - Opaque high-entropy tokens sent via `HttpOnly`, `Secure`, `SameSite=Lax` cookies.
+   - Central low-latency session validation powered by **Redis**.
+   - Immediate privilege revocation, user banning, and active session purging without waiting for JWT expiration.
+   - Database durability backed by **PostgreSQL** via **Prisma ORM**.
 
 2. **Tenant & Organization Isolation:**
-    - Soft-partitioned multi-tenancy using explicit organizational discriminator columns.
-    - Role-Based Access Control (RBAC) dynamically fetched and mapped in the session payload.
+   - Soft-partitioned multi-tenancy using explicit organizational discriminator columns.
+   - Role-Based Access Control (RBAC) dynamically fetched and mapped in the session payload.
 
 3. **Asynchronous Event-Driven Processing:**
-    - Non-blocking execution lines using **Kafka** to handle heavy secondary actions.
-    - Separate background workers for transactional workflows via **React Email** and **Nodemailer**.
+   - Non-blocking execution lines using **Kafka** to handle heavy secondary actions.
+   - Separate background workers for transactional workflows via **React Email** and **Nodemailer**.
 
 ## 🛠️ Tech Stack & Workspace Blueprint
 

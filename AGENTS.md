@@ -2,9 +2,9 @@
 
 ## Project Structure & Module Organization
 
-Zentry is a pnpm workspace TypeScript monorepo. Application entry points live in `apps/`: `apps/api` is the Express authentication gateway 
-and `apps/worker` is reserved for background Kafka/email work. Shared packages live in `packages/`: `database` 
-for Prisma/data access, `types` for shared contracts, and `validation` for Zod schemas. Keep reusable code in `packages/*` 
+Zentry is a pnpm workspace TypeScript monorepo. Application entry points live in `apps/`: `apps/api` is the Express authentication gateway
+and `apps/worker` is reserved for background Kafka/email work. Shared packages live in `packages/`: `database`
+for Prisma/data access, `types` for shared contracts, and `validation` for Zod schemas. Keep reusable code in `packages/*`
 and app-specific wiring in `apps/*`. Local infrastructure is in `docker-compose.yml`.
 
 ## Build, Test, and Development Commands
@@ -19,9 +19,9 @@ Add package-level `dev`, `build`, `lint`, or `typecheck` scripts as implementati
 
 ## Coding Style & Naming Conventions
 
-Use TypeScript ES modules (`"type": "module"`) and inherit strict settings from `tsconfig.base.json`. 
-The compiler enforces `strict`, `noUnusedLocals`, `noUnusedParameters`, `noUncheckedIndexedAccess`, and `noImplicitOverride`. 
-Prefer two-space indentation, named exports for shared utilities, PascalCase for types/classes, camelCase for functions and variables, 
+Use TypeScript ES modules (`"type": "module"`) and inherit strict settings from `tsconfig.base.json`.
+The compiler enforces `strict`, `noUnusedLocals`, `noUnusedParameters`, `noUncheckedIndexedAccess`, and `noImplicitOverride`.
+Prefer two-space indentation, named exports for shared utilities, PascalCase for types/classes, camelCase for functions and variables,
 and lowercase package names under `@zentry/*`.
 
 ## Testing Guidelines
