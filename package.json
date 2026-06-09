@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm --parallel --filter \"./apps/*\" dev",
+    "start": "pnpm --parallel --filter \"./apps/*\" start",
     "build": "pnpm --filter \"./packages/*\" build && pnpm --filter \"./apps/*\" build",
     "db:generate": "pnpm --filter @zentry/database db:generate",
     "db:push": "pnpm --filter @zentry/database db:push",
