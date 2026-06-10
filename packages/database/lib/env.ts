@@ -1,14 +1,17 @@
 import dotenv from 'dotenv';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import findConfig from 'find-config';
 import { DatabaseEnvSchema } from '@zentry/validation';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const rootEnvPath = resolve(__dirname, '../../../.env');
-// const packageEnvPath = resolve(__dirname, '../.env');
+// Automatically traverse upward until the root monorepo .env file is found
+const envPath = findConfig('.env');
 
-dotenv.config({ path: rootEnvPath });
-// dotenv.config({ path: packageEnvPath, override: true });
+if (envPath) {
+  dotenv.config({ path: envPath });
+} else {
+  throw new Error(
+    'No .env file found in the project root. Please create one at the root. [from database]',
+  );
+}
 
 const validatedEnv = DatabaseEnvSchema.safeParse(process.env);
 

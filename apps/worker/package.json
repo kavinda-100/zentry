@@ -2,11 +2,13 @@
   "name": "@zentry/worker",
   "version": "0.0.1",
   "private": true,
-  "main": "./index.ts",
+  "main": "./dist/index.js",
   "types": "./index.ts",
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.json --noEmit false --outDir ./dist"
+    "dev": "tsx watch ./index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc -p tsconfig.json --noEmit false && ts-add-js-extension --dir=dist"
   },
   "keywords": [
     "Zentry",
