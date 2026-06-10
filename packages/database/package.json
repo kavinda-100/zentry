@@ -2,14 +2,14 @@
   "name": "@zentry/database",
   "version": "0.0.1",
   "private": true,
-  "main": "./index.ts",
+  "main": "./dist/index.js",
   "types": "./index.ts",
   "type": "module",
   "scripts": {
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
-    "build": "prisma generate && tsc -p tsconfig.json --noEmit false --outDir ./dist"
+    "build": "prisma generate && tsc -p tsconfig.json --noEmit false && ts-add-js-extension --dir=dist"
   },
   "keywords": [
     "Zentry",
@@ -21,15 +21,17 @@
   "author": "Kavinda Rathnayake",
   "license": "MIT",
   "devDependencies": {
+    "@types/find-config": "^1.0.4",
     "@types/pg": "^8.20.0",
     "prisma": "^7.8.0",
     "tsx": "^4.22.4"
   },
   "dependencies": {
-    "@zentry/validation": "workspace:*",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "@zentry/validation": "workspace:*",
     "dotenv": "^17.4.2",
+    "find-config": "^1.0.0",
     "pg": "^8.21.0"
   }
 }
