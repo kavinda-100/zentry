@@ -15,6 +15,7 @@ import { logger } from './utils/logger';
 const app = express();
 
 // middlewares
+app.set('trust proxy', 1); // Instructs Express to parse 'X-Forwarded-For' headers securely
 app.use(
   cors({
     origin: true, // Configured to allow clean cross-tenant visual UI redirections

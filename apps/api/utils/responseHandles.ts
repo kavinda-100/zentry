@@ -31,18 +31,21 @@ export function OKResponse<T>(
  * @param {Response} res - The response object from Express.
  * @param {number} status_code - The HTTP status code to be sent in the response.
  * @param {string} message - A message describing the error.
+ * @param data {T | null} - The data to be sent in the response (optional).
  * @returns {void} This function does not return anything, it sends a response to the client.
  * @example
  * ErrorResponse(res, StatusCodes.BAD_REQUEST, 'Invalid email address');
  */
-export function ErrorResponse(
+export function ErrorResponse<T>(
   res: Response,
   status_code: (typeof StatusCodes)[keyof typeof StatusCodes],
   message: string,
+  data: T | null = null,
 ): void {
   res.status(status_code).json({
     success: false,
     status_code,
     message,
+    data,
   });
 }
