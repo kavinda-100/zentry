@@ -95,7 +95,7 @@ model Account {
   id                    String       @id @default(uuid())
   userId                String
   user                  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accountId             String // Provider specific ID (e.g. google sub id)
+  accountId             String // Provider specific ID (e.g. google sub id or user id for credentials)
   providerType          ProviderType
   accessToken           String?
   refreshToken          String?

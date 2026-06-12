@@ -1,20 +1,19 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { standardRateLimiter, strictRateLimiter } from '../middleware/rateLimiter';
+import { register, login } from '../controllers/auth/index.controller';
 
 export const router = Router();
 
-// Mount routes with their respective protection matrices
-router.post('/register', strictRateLimiter, (_req: Request, res: Response) => {
-  res.status(200).json({ message: 'Scaffold registration route hit safely.' });
-});
-
-router.post('/login', strictRateLimiter, (_req: Request, res: Response) => {
-  res.status(200).json({ message: 'Scaffold login route hit safely.' });
-});
+// staged auth routes
+router.post('/register', strictRateLimiter, register);
+router.post('/login', strictRateLimiter, login);
 
 router.get('/providers', standardRateLimiter, (_req: Request, res: Response) => {
   res.status(200).json({ providers: ['credential', 'google'] });
 });
+
+// for organizational auth routes
+// router.post('/register/org/:orgId', strictRateLimiter, registerOrganization);
 
 export default router;
