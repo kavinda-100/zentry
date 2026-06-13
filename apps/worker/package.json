@@ -20,6 +20,23 @@
   "author": "Kavinda Rathnayake",
   "license": "MIT",
   "devDependencies": {
+    "@react-email/ui": "^6.6.0",
+    "@types/dotenv": "^8.2.3",
+    "@types/find-config": "^1.0.4",
+    "@types/node": "^25.9.2",
+    "@types/nodemailer": "^8.0.1",
+    "@types/react": "^19.2.17",
     "tsx": "^4.22.4"
+  },
+  "dependencies": {
+    "@zentry/validation": "workspace:*",
+    "@zentry/types": "workspace:*",
+    "dotenv": "^17.4.2",
+    "find-config": "^1.0.0",
+    "kafkajs": "^2.2.4",
+    "nodemailer": "^8.0.11",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-email": "^6.6.0"
   }
 }

@@ -108,12 +108,23 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       maxAge: DEFAULT_SESSION_EXPIRY_IN_SECONDS * 1000,
     });
 
+    // save the otp to the db
+    const otp = generateOtp();
+    await prisma.otpCode.create({
+      data: {
+        userId: user.id,
+        code: otp,
+        purpose: 'EMAIL_VERIFICATION',
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000), // OTP expires in 10 minutes
+      },
+    });
+
     // send Kafka message to send email verification
     await publishAuthEvent({
       type: 'EMAIL_VERIFICATION',
       userId: user.id,
       payload: {
-        otp: generateOtp(),
+        otp: otp,
         to: user.email,
       },
     });

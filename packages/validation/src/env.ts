@@ -29,12 +29,30 @@ export const ApiEnvSchema = z.object({
 
 export const WorkerEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  DATABASE_URL: z.url({ error: 'DATABASE_URL must be a valid connection URL.' }),
+  WORKER_PORT: z.coerce
+    .number({ error: 'WORKER_PORT must be a valid number.' })
+    .int({ error: 'WORKER_PORT must be an integer.' })
+    .positive({ error: 'WORKER_PORT must be greater than 0.' })
+    .default(5001),
   KAFKA_BROKERS: z
     .string({
       error: 'KAFKA_BROKERS is required to connect worker event consumers.',
     })
     .transform((str) => str.split(',')),
+  KAFKA_NUM_PARTITIONS: z.coerce
+    .number({
+      error: 'KAFKA_NUM_PARTITIONS must be a valid number.',
+    })
+    .int({ error: 'KAFKA_NUM_PARTITIONS must be an integer.' })
+    .positive({ error: 'KAFKA_NUM_PARTITIONS must be greater than 0.' })
+    .default(1),
+  KAFKA_REPLICATION_FACTOR: z.coerce
+    .number({
+      error: 'KAFKA_REPLICATION_FACTOR must be a valid number.',
+    })
+    .int({ error: 'KAFKA_REPLICATION_FACTOR must be an integer.' })
+    .positive({ error: 'KAFKA_REPLICATION_FACTOR must be greater than 0.' })
+    .default(1),
   SMTP_HOST: z
     .string({
       error: 'SMTP_HOST is required to dispatch transactional emails.',
@@ -43,8 +61,8 @@ export const WorkerEnvSchema = z.object({
   SMTP_PORT: z.coerce.number({
     error: 'SMTP_PORT must be a valid numerical port address (e.g., 587).',
   }),
-  SMTP_USER: z.string({
-    error: 'SMTP_USER credential configuration string is missing.',
+  SMTP_USER: z.email({
+    error: 'SMTP_USER, must be a valid email address (e.g., user@example.com).',
   }),
   SMTP_PASS: z.string({
     error: 'SMTP_PASS authentication credential string is missing.',
@@ -55,6 +73,6 @@ export const DatabaseEnvSchema = z.object({
   DATABASE_URL: z.url({ error: 'DATABASE_URL must be a valid database protocol URL string.' }),
 });
 
-export type ApiEnv = z.infer<typeof ApiEnvSchema>;
-export type WorkerEnv = z.infer<typeof WorkerEnvSchema>;
-export type DatabaseEnv = z.infer<typeof DatabaseEnvSchema>;
+export type ApiEnvType = z.infer<typeof ApiEnvSchema>;
+export type WorkerEnvType = z.infer<typeof WorkerEnvSchema>;
+export type DatabaseEnvType = z.infer<typeof DatabaseEnvSchema>;

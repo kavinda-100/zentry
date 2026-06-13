@@ -1,6 +1,7 @@
 import { Kafka, Partitioners } from 'kafkajs';
 import { randomUUID } from 'crypto';
 import { logger } from '../utils/logger';
+import { env } from './env';
 import type {
   AuthEventPayloadMap,
   AuthEventType,
@@ -12,7 +13,7 @@ const API_AUTH_EVENTS_TOPIC = 'api-auth-events';
 
 export const kafka = new Kafka({
   clientId: 'api-auth-service',
-  brokers: ['localhost:9092'],
+  brokers: env.KAFKA_BROKERS,
 });
 
 const producer = kafka.producer({ createPartitioner: Partitioners.LegacyPartitioner });
@@ -38,7 +39,7 @@ export async function publishAuthEvent<T extends AuthEventType>({
     await producer.connect();
 
     // construct the event payload
-    const eventPayload: KafkaEventPayloadType<AuthEventType, AuthEventPayloadMap[AuthEventType]> = {
+    const eventPayload: KafkaEventPayloadType<T, AuthEventPayloadMap[T]> = {
       eventId: `evt_${randomUUID()}`,
       type,
       timestamp: new Date().toISOString(),
