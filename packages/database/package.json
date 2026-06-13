@@ -9,6 +9,8 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "db:reset": "prisma migrate reset --force && prisma generate && prisma db push",
     "build": "prisma generate && tsc -p tsconfig.json --noEmit false && ts-add-js-extension --dir=dist"
   },
   "keywords": [

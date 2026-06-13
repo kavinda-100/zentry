@@ -22,6 +22,12 @@ enum Role {
   MEMBER
 }
 
+enum OtpPurpose {
+  EMAIL_VERIFICATION
+  TWO_FACTOR_AUTH
+  RESET_PASSWORD
+}
+
 // Global Zentry Core Users (Single Identity Profile)
 model User {
   id            String         @id @default(uuid())
@@ -34,6 +40,7 @@ model User {
   sessions      Session[] // Active global/personal sessions
   organizations Organization[] // if create an organization
   memberships   Membership[] // Connects a user to many organizations
+  otpCodes      OtpCode[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -95,7 +102,7 @@ model Account {
   id                    String       @id @default(uuid())
   userId                String
   user                  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accountId             String // Provider specific ID (e.g. google sub id)
+  accountId             String // Provider specific ID (e.g. google sub id or user id for credentials)
   providerType          ProviderType
   accessToken           String?
   refreshToken          String?
@@ -129,5 +136,20 @@ model Session {
   updatedAt DateTime @updatedAt
 
   @@index([token])
+  @@index([userId])
+}
+
+model OtpCode {
+  id        String     @id @default(uuid())
+  code      String
+  purpose   OtpPurpose // "EMAIL_VERIFICATION", "TWO_FACTOR_AUTH", "RESET_PASSWORD"
+  expiresAt DateTime
+  userId    String
+  user      User       @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
   @@index([userId])
 }

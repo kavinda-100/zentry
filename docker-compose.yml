@@ -26,6 +26,8 @@ services:
       - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
     volumes:
       - kafka_data:/var/lib/kafka/data
+    networks:
+      - zentry-network
 
   identity-db:
     image: postgres:17-alpine
@@ -39,6 +41,8 @@ services:
       - '5433:5432'
     volumes:
       - identity_db_data:/var/lib/postgresql/data
+    networks:
+      - zentry-network
 
   session-cache:
     image: redis:8.6.4-alpine
@@ -49,6 +53,22 @@ services:
     command: redis-server --appendonly yes # Enables AOF persistence for crash resilience
     volumes:
       - redis_data:/data
+    networks:
+      - zentry-network
+
+  redis-insight:
+    image: redis/redisinsight:latest
+    container_name: zentry-redis-insight
+    ports:
+      - '5540:5540'
+    depends_on:
+      - session-cache
+    networks:
+        - zentry-network
+
+networks:
+  zentry-network:
+    driver: bridge
 
 volumes:
   identity_db_data:
