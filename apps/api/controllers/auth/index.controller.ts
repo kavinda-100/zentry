@@ -3,11 +3,14 @@ import { logger } from '../../utils/logger';
 import { StatusCodes } from '../../utils/statusCodes';
 import { ErrorResponse, OKResponse } from '../../utils/responseHandles';
 import { prisma } from '@zentry/database';
-import { formatZodIssues, registerSchema } from '@zentry/validation';
+import { registerSchema } from '@zentry/validation/src/auth';
+import { formatZodIssues } from '@zentry/validation/src/utils/zod';
 import { generateSessionToken, hashPassword } from '../../utils/crypto';
+import { createSessionInTheDatabase, createSessionInTheRedis } from './utils';
+import { DEFAULT_SESSION_EXPIRY_IN_SECONDS } from '../../constants';
 
 /**
- * @description The standard registration flow for a user.
+ * @description The standard registration flow for a user (not for organization users).
  * This will create a new user and account in the database and return a session token for the user to use in later in the requests.
  * */
 export const register = async (req: Request, res: Response, next: NextFunction) => {
@@ -58,9 +61,51 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 
     const sessionToken = generateSessionToken();
 
-    // TODO: create a session for the user in db, redis
+    // save the session in the database
+    const dbSessionRecord = await createSessionInTheDatabase({
+      userId: user.id,
+      token: sessionToken,
+      expiresAt: new Date(DEFAULT_SESSION_EXPIRY_IN_SECONDS),
+      organizationId: undefined,
+      permissions: undefined,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'] || 'unknown',
+    });
 
-    //TODO: send Kafka message to send welcome email
+    // save the session in the Redis cache
+    await createSessionInTheRedis({
+      token: sessionToken,
+      expiresInSeconds: DEFAULT_SESSION_EXPIRY_IN_SECONDS,
+      sessionObject: {
+        sessionId: dbSessionRecord.id,
+        ipAddress: req.ip,
+        user: {
+          id: user.id,
+          emailVerified: user.emailVerified,
+        },
+        account: {
+          id: account.id,
+          userId: user.id,
+          accountId: user.id,
+          providerType: account.providerType,
+        },
+        org: {
+          id: undefined,
+          permissions: undefined,
+          isBanned: undefined,
+        },
+      },
+    });
+
+    // set the session cookie for web clients,
+    // (mobile clients should store the session token in secure storage and send it in the Authorization header)
+    // e.g.: - Authorization: Bearer <session_token>
+    res.cookie('session_token', sessionToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: DEFAULT_SESSION_EXPIRY_IN_SECONDS * 1000,
+    });
 
     //TODO: send Kafka message to send email verification
 
