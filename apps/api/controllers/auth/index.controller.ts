@@ -5,9 +5,10 @@ import { ErrorResponse, OKResponse } from '../../utils/responseHandles';
 import { prisma } from '@zentry/database';
 import { registerSchema } from '@zentry/validation/src/auth';
 import { formatZodIssues } from '@zentry/validation/src/utils/zod';
-import { generateSessionToken, hashPassword } from '../../utils/crypto';
+import { generateOtp, generateSessionToken, hashPassword } from '../../utils/crypto';
 import { createSessionInTheDatabase, createSessionInTheRedis } from './utils';
 import { DEFAULT_SESSION_EXPIRY_IN_SECONDS } from '../../constants';
+import { publishAuthEvent } from '../../lib/kafka';
 
 /**
  * @description The standard registration flow for a user (not for organization users).
@@ -107,7 +108,15 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       maxAge: DEFAULT_SESSION_EXPIRY_IN_SECONDS * 1000,
     });
 
-    //TODO: send Kafka message to send email verification
+    // send Kafka message to send email verification
+    await publishAuthEvent({
+      type: 'EMAIL_VERIFICATION',
+      userId: user.id,
+      payload: {
+        otp: generateOtp(),
+        to: user.email,
+      },
+    });
 
     const resBody = {
       user: {

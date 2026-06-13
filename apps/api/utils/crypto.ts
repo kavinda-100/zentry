@@ -10,14 +10,14 @@ async function scryptAsync(password: string, salt: string) {
   });
 }
 
-export async function hashPassword(password: string) {
+export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16).toString('hex');
   const hash = await scryptAsync(password, salt);
 
   return `${salt}:${hash.toString('hex')}`;
 }
 
-export async function verifyPassword(password: string, storedHash: string) {
+export async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
   const [salt, hashHex] = storedHash.split(':');
   if (!salt || !hashHex) return false;
   const stored = Buffer.from(hashHex, 'hex');
@@ -26,8 +26,14 @@ export async function verifyPassword(password: string, storedHash: string) {
   return timingSafeEqual(stored, derived);
 }
 
-export function generateSessionToken() {
+export function generateSessionToken(): string {
   return randomBytes(191).toString('base64url');
+}
+
+export function generateOtp(length: number = 6): string {
+  return Math.floor(100000 + Math.random() * 900000)
+    .toString()
+    .slice(0, length);
 }
 
 export function generateApiKey() {
@@ -38,6 +44,6 @@ export function generateApiKey() {
   return { raw, hash, prefix };
 }
 
-export function hashApiKey(key: string) {
+export function hashApiKey(key: string): string {
   return createHash('sha256').update(key).digest('hex');
 }
