@@ -2,8 +2,8 @@ import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { standardRateLimiter, strictRateLimiter } from '../middleware/rateLimiter';
 import { requireAuthenticatedSession } from '../middleware/requireAuthenticatedSession';
-import { register, login, logout, getMe } from '../controllers/auth/index.controller';
-import { verifyEmail } from '../controllers/auth/verify.email.controller';
+import { register, login, logout, getMe } from '../controllers/auth/standard/index.controller';
+import { verifyEmail } from '../controllers/auth/standard/verify.email.controller';
 
 export const router = Router();
 

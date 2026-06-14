@@ -1,11 +1,11 @@
 import type { Request, Response, NextFunction } from 'express';
-import { logger } from '../../utils/logger';
-import { StatusCodes } from '../../utils/statusCodes';
-import { ErrorResponse, OKResponse } from '../../utils/responseHandles';
-import { prisma } from '@zentry/database';
-import { verifyEmailSchema } from '@zentry/validation/src/auth';
-import { formatZodIssues } from '@zentry/validation/src/utils/zod';
-import { updateAuthSessionInRedis } from '../../lib/redis/auth.redis';
+import { logger } from '../../../utils/logger';
+import { StatusCodes } from '../../../utils/statusCodes';
+import { ErrorResponse, OKResponse } from '../../../utils/responseHandles';
+import { prisma } from 'packages/database';
+import { verifyEmailSchema } from '@zentry/validation/dist/src/auth';
+import { formatZodIssues } from 'packages/validation/src/utils/zod';
+import { updateAuthSessionInRedis } from '../../../lib/redis/auth.redis';
 
 export const verifyEmail = async (req: Request, res: Response, next: NextFunction) => {
   try {

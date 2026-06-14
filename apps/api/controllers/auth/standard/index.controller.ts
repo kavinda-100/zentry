@@ -1,22 +1,22 @@
 import type { Request, Response, NextFunction } from 'express';
-import { logger } from '../../utils/logger';
-import { StatusCodes } from '../../utils/statusCodes';
-import { ErrorResponse, OKResponse } from '../../utils/responseHandles';
-import { prisma } from '@zentry/database';
-import { registerSchema, loginSchema } from '@zentry/validation/src/auth';
-import { formatZodIssues } from '@zentry/validation/src/utils/zod';
+import { logger } from '../../../utils/logger';
+import { StatusCodes } from '../../../utils/statusCodes';
+import { ErrorResponse, OKResponse } from '../../../utils/responseHandles';
+import { prisma } from 'packages/database';
+import { registerSchema, loginSchema } from '@zentry/validation/dist/src/auth';
+import { formatZodIssues } from 'packages/validation/src/utils/zod';
 import {
   generateOtp,
   generateSessionToken,
   hashPassword,
   verifyPassword,
-} from '../../utils/crypto';
+} from '../../../utils/crypto';
 import {
   createAuthSessionInTheRedis,
   deleteAuthSessionFromRedis,
-} from '../../lib/redis/auth.redis';
-import { DEFAULT_SESSION_EXPIRY_IN_SECONDS, SESSION_TOKEN_COOKIE_NAME } from '../../constants';
-import { publishAuthEvent } from '../../lib/kafka';
+} from '../../../lib/redis/auth.redis';
+import { DEFAULT_SESSION_EXPIRY_IN_SECONDS, SESSION_TOKEN_COOKIE_NAME } from '../../../constants';
+import { publishAuthEvent } from '../../../lib/kafka';
 
 /**
  * @description The standard registration flow for a user (not for organization users).
