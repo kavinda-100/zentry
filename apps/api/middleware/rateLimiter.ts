@@ -110,8 +110,8 @@ const rateLimiter = (options: RateLimiterOptions) => {
  * Enforces a tight limit of 5 requests per 5 minutes to mitigate brute-force attacks
  **/
 export const strictRateLimiter = rateLimiter({
-  windowMs: 5 * 60 * 1000,
-  maxRequests: 5,
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  maxRequests: 5, // 5 requests per 5 minutes
   message: 'Too many requests from this IP address. Please try again in 5 minutes.',
   isStrict: true,
 });
@@ -121,8 +121,8 @@ export const strictRateLimiter = rateLimiter({
  * Allows a more generous limit of 60 requests per minute for typical usage patterns
  **/
 export const standardRateLimiter = rateLimiter({
-  windowMs: 60 * 1000,
-  maxRequests: 3, // just for testing adjust as needed
+  windowMs: 60 * 1000, // 1 minute
+  maxRequests: 60, // 60 requests per minute
   message: 'Too many requests from this IP address. Please try again later.',
   isStrict: false,
 });

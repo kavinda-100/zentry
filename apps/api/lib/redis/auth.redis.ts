@@ -116,3 +116,27 @@ export const updateAuthSessionInRedis = async (
     return false;
   }
 };
+
+type DeleteSessionFromRedisProps = {
+  token: string;
+};
+
+/**
+ * @description This function is used to delete a session from the Redis cache.
+ * @param {DeleteSessionFromRedisProps} props - The properties of the session to be deleted.
+ * @returns {Promise<void>} A promise that resolves when the session is deleted from the Redis cache.
+ * */
+export const deleteAuthSessionFromRedis = async (
+  props: DeleteSessionFromRedisProps,
+): Promise<void> => {
+  const { token } = props;
+  const redisKey = `session:${token}`;
+
+  try {
+    await redis.del(redisKey);
+    logger.debug({ redisKey }, 'Session successfully deleted from Redis cache.');
+  } catch (error) {
+    logger.error({ error, redisKey }, 'Failed to delete session from Redis cache.');
+    throw error;
+  }
+};
