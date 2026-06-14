@@ -4,7 +4,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { pinoHttp } from 'pino-http';
 import { env } from './lib/env';
-import { redis } from './lib/redis';
+import { redis } from './lib/redis/redis';
 import { prisma } from '@zentry/database';
 import mainRouterV1 from './routes';
 import { errorHandler } from './middleware/errorHandler';
