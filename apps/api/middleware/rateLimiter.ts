@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { redis } from '../lib/redis';
+import { redis } from '../lib/redis/redis';
 import { ErrorResponse } from '../utils/responseHandles';
 import { StatusCodes } from '../utils/statusCodes';
 import { logger } from '../utils/logger';

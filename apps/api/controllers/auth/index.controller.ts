@@ -6,8 +6,8 @@ import { prisma } from '@zentry/database';
 import { registerSchema } from '@zentry/validation/src/auth';
 import { formatZodIssues } from '@zentry/validation/src/utils/zod';
 import { generateOtp, generateSessionToken, hashPassword } from '../../utils/crypto';
-import { createSessionInTheDatabase, createSessionInTheRedis } from './utils';
-import { DEFAULT_SESSION_EXPIRY_IN_SECONDS } from '../../constants';
+import { createAuthSessionInTheRedis } from '../../lib/redis/auth.redis';
+import { DEFAULT_SESSION_EXPIRY_IN_SECONDS, SESSION_TOKEN_COOKIE_NAME } from '../../constants';
 import { publishAuthEvent } from '../../lib/kafka';
 
 /**
@@ -63,18 +63,21 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     const sessionToken = generateSessionToken();
 
     // save the session in the database
-    const dbSessionRecord = await createSessionInTheDatabase({
-      userId: user.id,
-      token: sessionToken,
-      expiresAt: new Date(DEFAULT_SESSION_EXPIRY_IN_SECONDS),
-      organizationId: undefined,
-      permissions: undefined,
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'] || 'unknown',
+    logger.info('Creating session in the database.');
+    const dbSessionRecord = await prisma.session.create({
+      data: {
+        userId: user.id,
+        token: sessionToken,
+        expiresAt: new Date(DEFAULT_SESSION_EXPIRY_IN_SECONDS),
+        organizationId: undefined,
+        permissions: undefined,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'] || 'unknown',
+      },
     });
 
     // save the session in the Redis cache
-    await createSessionInTheRedis({
+    await createAuthSessionInTheRedis({
       token: sessionToken,
       expiresInSeconds: DEFAULT_SESSION_EXPIRY_IN_SECONDS,
       sessionObject: {
@@ -101,7 +104,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     // set the session cookie for web clients,
     // (mobile clients should store the session token in secure storage and send it in the Authorization header)
     // e.g.: - Authorization: Bearer <session_token>
-    res.cookie('session_token', sessionToken, {
+    res.cookie(SESSION_TOKEN_COOKIE_NAME, sessionToken, {
       httpOnly: true,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
