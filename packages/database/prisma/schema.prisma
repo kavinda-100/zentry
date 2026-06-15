@@ -17,6 +17,11 @@ enum ProviderType {
   OAUTH
 }
 
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+}
+
 enum Role {
   ADMIN
   MEMBER
@@ -102,8 +107,12 @@ model Account {
   id                    String       @id @default(uuid())
   userId                String
   user                  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider              AuthProvider
   accountId             String // Provider specific ID (e.g. google sub id or user id for credentials)
   providerType          ProviderType
+  providerEmail         String?
+  providerDisplayName   String?
+  providerAvatarUrl     String?
   accessToken           String?
   refreshToken          String?
   accessTokenExpiresAt  DateTime? // Changed to nullable as credential logins do not use these
@@ -115,7 +124,9 @@ model Account {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([accountId])
+  @@unique([provider, accountId])
+  @@unique([userId, provider])
+  @@index([userId, provider, accountId])
 }
 
 // Active State Sessions (Unified Database Cache)

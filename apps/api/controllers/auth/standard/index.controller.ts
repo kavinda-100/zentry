@@ -2,9 +2,9 @@ import type { Request, Response, NextFunction } from 'express';
 import { logger } from '../../../utils/logger';
 import { StatusCodes } from '../../../utils/statusCodes';
 import { ErrorResponse, OKResponse } from '../../../utils/responseHandles';
-import { prisma } from 'packages/database';
-import { registerSchema, loginSchema } from '@zentry/validation/dist/src/auth';
-import { formatZodIssues } from 'packages/validation/src/utils/zod';
+import { prisma } from '@zentry/database';
+import { registerSchema, loginSchema } from '@zentry/validation/src/auth';
+import { formatZodIssues } from '@zentry/validation/src/utils/zod';
 import {
   generateOtp,
   generateSessionToken,
@@ -59,6 +59,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       const account = await tx.account.create({
         data: {
           userId: user.id,
+          provider: 'LOCAL',
           accountId: user.id,
           hashedPassword: hashedPassword,
           providerType: 'CREDENTIAL',
@@ -76,7 +77,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       data: {
         userId: user.id,
         token: sessionToken,
-        expiresAt: new Date(DEFAULT_SESSION_EXPIRY_IN_SECONDS),
+        expiresAt: new Date(Date.now() + DEFAULT_SESSION_EXPIRY_IN_SECONDS * 1000),
         organizationId: undefined,
         permissions: undefined,
         ipAddress: req.ip,
@@ -98,7 +99,8 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
         account: {
           id: account.id,
           userId: user.id,
-          accountId: user.id,
+          accountId: account.accountId,
+          provider: account.provider,
           providerType: account.providerType,
         },
         org: {
@@ -182,7 +184,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 
     // find the user's account'
     const account = await prisma.account.findFirst({
-      where: { userId: user.id },
+      where: { userId: user.id, provider: 'LOCAL' },
     });
     if (!account) {
       return ErrorResponse(res, StatusCodes.NOT_FOUND, 'User account not found');
@@ -212,7 +214,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       data: {
         userId: user.id,
         token: loginSessionToken,
-        expiresAt: new Date(DEFAULT_SESSION_EXPIRY_IN_SECONDS),
+        expiresAt: new Date(Date.now() + DEFAULT_SESSION_EXPIRY_IN_SECONDS * 1000),
         organizationId: undefined,
         permissions: undefined,
         ipAddress: req.ip,
@@ -234,7 +236,8 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
         account: {
           id: account.id,
           userId: user.id,
-          accountId: user.id,
+          accountId: account.accountId,
+          provider: account.provider,
           providerType: account.providerType,
         },
         org: {

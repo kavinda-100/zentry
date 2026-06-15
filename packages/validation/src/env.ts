@@ -25,6 +25,15 @@ export const ApiEnvSchema = z.object({
       error: 'COOKIE_SECRET is too vulnerable. It must be at least 32 characters long.',
     }),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('debug'),
+  GOOGLE_CLIENT_ID: z.string({
+    error: 'GOOGLE_CLIENT_ID is required for Google OAuth authentication.',
+  }),
+  GOOGLE_CLIENT_SECRET: z.string({
+    error: 'GOOGLE_CLIENT_SECRET is required for Google OAuth authentication.',
+  }),
+  GOOGLE_REDIRECT_URI: z.string({
+    error: 'GOOGLE_REDIRECT_URI is required for Google OAuth authentication.',
+  }),
 });
 
 export const WorkerEnvSchema = z.object({
