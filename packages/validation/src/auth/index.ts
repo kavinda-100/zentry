@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 const ProviderEnum = z.enum(['CREDENTIAL', 'OAUTH']);
+const AuthProviderEnum = z.enum(['LOCAL', 'GOOGLE']);
 const RoleEnum = z.enum(['ADMIN', 'MEMBER']);
 
 export const sessionObjectSchema = z.object({
@@ -15,6 +16,7 @@ export const sessionObjectSchema = z.object({
     id: z.string({ error: 'Account ID is required' }),
     userId: z.string({ error: 'User ID is required' }),
     accountId: z.string({ error: 'Account ID is required' }),
+    provider: AuthProviderEnum,
     providerType: ProviderEnum,
   }),
   org: z.object({
@@ -62,6 +64,7 @@ export const verifyEmailSchema = z
 
 export type SessionObjectSchemaType = z.infer<typeof sessionObjectSchema>;
 export type ProviderEnumType = z.infer<typeof ProviderEnum>;
+export type AuthProviderEnumType = z.infer<typeof AuthProviderEnum>;
 export type RoleEnumType = z.infer<typeof RoleEnum>;
 export type RegisterSchemaType = z.infer<typeof registerSchema>;
 export type LoginSchemaType = z.infer<typeof loginSchema>;

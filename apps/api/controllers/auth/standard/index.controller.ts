@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
-import { logger } from '../../utils/logger';
-import { StatusCodes } from '../../utils/statusCodes';
-import { ErrorResponse, OKResponse } from '../../utils/responseHandles';
+import { logger } from '../../../utils/logger';
+import { StatusCodes } from '../../../utils/statusCodes';
+import { ErrorResponse, OKResponse } from '../../../utils/responseHandles';
 import { prisma } from '@zentry/database';
 import { registerSchema, loginSchema } from '@zentry/validation/src/auth';
 import { formatZodIssues } from '@zentry/validation/src/utils/zod';
@@ -10,13 +10,13 @@ import {
   generateSessionToken,
   hashPassword,
   verifyPassword,
-} from '../../utils/crypto';
+} from '../../../utils/crypto';
 import {
   createAuthSessionInTheRedis,
   deleteAuthSessionFromRedis,
-} from '../../lib/redis/auth.redis';
-import { DEFAULT_SESSION_EXPIRY_IN_SECONDS, SESSION_TOKEN_COOKIE_NAME } from '../../constants';
-import { publishAuthEvent } from '../../lib/kafka';
+} from '../../../lib/redis/auth.redis';
+import { DEFAULT_SESSION_EXPIRY_IN_SECONDS, SESSION_TOKEN_COOKIE_NAME } from '../../../constants';
+import { publishAuthEvent } from '../../../lib/kafka';
 
 /**
  * @description The standard registration flow for a user (not for organization users).
@@ -59,6 +59,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       const account = await tx.account.create({
         data: {
           userId: user.id,
+          provider: 'LOCAL',
           accountId: user.id,
           hashedPassword: hashedPassword,
           providerType: 'CREDENTIAL',
@@ -76,7 +77,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       data: {
         userId: user.id,
         token: sessionToken,
-        expiresAt: new Date(DEFAULT_SESSION_EXPIRY_IN_SECONDS),
+        expiresAt: new Date(Date.now() + DEFAULT_SESSION_EXPIRY_IN_SECONDS * 1000),
         organizationId: undefined,
         permissions: undefined,
         ipAddress: req.ip,
@@ -98,7 +99,8 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
         account: {
           id: account.id,
           userId: user.id,
-          accountId: user.id,
+          accountId: account.accountId,
+          provider: account.provider,
           providerType: account.providerType,
         },
         org: {
@@ -176,13 +178,13 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     }
 
     // check if the user has already verified their email
-    if (!user.emailVerified) {
-      return ErrorResponse(res, StatusCodes.FORBIDDEN, 'Email not verified');
-    }
+    // if (!user.emailVerified) {
+    //   return ErrorResponse(res, StatusCodes.FORBIDDEN, 'Email not verified');
+    // }
 
     // find the user's account'
     const account = await prisma.account.findFirst({
-      where: { userId: user.id },
+      where: { userId: user.id, provider: 'LOCAL' },
     });
     if (!account) {
       return ErrorResponse(res, StatusCodes.NOT_FOUND, 'User account not found');
@@ -212,7 +214,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       data: {
         userId: user.id,
         token: loginSessionToken,
-        expiresAt: new Date(DEFAULT_SESSION_EXPIRY_IN_SECONDS),
+        expiresAt: new Date(Date.now() + DEFAULT_SESSION_EXPIRY_IN_SECONDS * 1000),
         organizationId: undefined,
         permissions: undefined,
         ipAddress: req.ip,
@@ -234,7 +236,8 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
         account: {
           id: account.id,
           userId: user.id,
-          accountId: user.id,
+          accountId: account.accountId,
+          provider: account.provider,
           providerType: account.providerType,
         },
         org: {
