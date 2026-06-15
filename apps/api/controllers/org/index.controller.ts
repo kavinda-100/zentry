@@ -5,6 +5,7 @@ import { StatusCodes } from '../../utils/statusCodes';
 import { createOrgSchema, updateOrgSchema, orgIdParamSchema } from '@zentry/validation/src/org';
 import { formatZodIssues } from '@zentry/validation/src/utils/zod';
 import { prisma, Role } from '@zentry/database';
+import { generateApiKey } from '../../utils/crypto';
 
 const canAccessOrganization = async (organizationId: string, userId: string): Promise<boolean> => {
   const organization = await prisma.organization.findUnique({
@@ -51,11 +52,26 @@ export const createOrganization = async (req: Request, res: Response, next: Next
 
     // create the organization in the database
     const org = await prisma.$transaction(async (tx) => {
+      const { raw, hash, prefix } = generateApiKey();
+
       const createdOrganization = await tx.organization.create({
         data: {
           rootAdminId: req.user.id,
           name: validatedBody.data.name,
           logoUrl: validatedBody.data.logoUrl,
+          apiKeyRow: raw,
+          apiKeyHash: hash,
+          apiKeyPrefix: prefix,
+          appHomeUrl: validatedBody.data.appHomeUrls,
+          appCallbackUrl: validatedBody.data.appCallbackUrls,
+        },
+        select: {
+          id: true,
+          name: true,
+          logoUrl: true,
+          apiKeyHash: true,
+          appHomeUrl: true,
+          appCallbackUrl: true,
         },
       });
 
@@ -207,6 +223,8 @@ export const updateOrganization = async (req: Request, res: Response, next: Next
       data: {
         name: validatedBody.data.name ?? org.name,
         logoUrl: validatedBody.data.logoUrl ?? org.logoUrl,
+        appHomeUrl: validatedBody.data.appHomeUrls ?? org.appHomeUrl,
+        appCallbackUrl: validatedBody.data.appCallbackUrls ?? org.appCallbackUrl,
       },
     });
 
