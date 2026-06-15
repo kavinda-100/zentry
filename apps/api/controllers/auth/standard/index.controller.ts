@@ -178,9 +178,9 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     }
 
     // check if the user has already verified their email
-    if (!user.emailVerified) {
-      return ErrorResponse(res, StatusCodes.FORBIDDEN, 'Email not verified');
-    }
+    // if (!user.emailVerified) {
+    //   return ErrorResponse(res, StatusCodes.FORBIDDEN, 'Email not verified');
+    // }
 
     // find the user's account'
     const account = await prisma.account.findFirst({
