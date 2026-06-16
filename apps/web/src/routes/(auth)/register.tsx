@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import AuthLayout from '#/layouts/AuthLayout.tsx';
 import { registerSchema, type RegisterSchemaType } from '@zentry/validation';
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
@@ -22,6 +22,7 @@ export const Route = createFileRoute('/(auth)/register')({
 
 function RegisterComponent() {
   const formId = 'register-form';
+  const navigate = useNavigate();
   const form = useForm<RegisterSchemaType>({
     resolver: standardSchemaResolver(registerSchema),
     defaultValues: {
@@ -36,6 +37,12 @@ function RegisterComponent() {
   function onSubmit(data: RegisterSchemaType) {
     // Do something with the form values.
     console.info(data);
+    void navigate({
+      to: '/verify-email',
+      search: {
+        email: data.email,
+      },
+    });
   }
 
   return (
