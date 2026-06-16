@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import AuthLayout from '#/layouts/AuthLayout.tsx';
 import { loginSchema, type LoginSchemaType } from '@zentry/validation';
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
@@ -14,12 +14,28 @@ import {
 } from '@/components/ui/card';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useMutation } from '@tanstack/react-query';
+import { loginServerFn } from '#/server-fns/auth';
+import { CircleAlert, Loader2, X } from 'lucide-react';
+import { useLocalStorage } from '#/hooks/useLocalStorage.ts';
+import { useState } from 'react';
 
 export const Route = createFileRoute('/(auth)/login')({
   component: LogInComponent,
 });
 
 function LogInComponent() {
+  const [showAlert, setShowAlert] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const navigate = useNavigate();
+  const { setItemToLocalStorage } = useLocalStorage();
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: async (data: LoginSchemaType) => loginServerFn({ data }),
+  });
+
   const formId = 'login-form';
   const form = useForm<LoginSchemaType>({
     resolver: standardSchemaResolver(loginSchema),
@@ -30,8 +46,23 @@ function LogInComponent() {
   });
 
   function onSubmit(data: LoginSchemaType) {
-    // Do something with the form values.
     console.info(data);
+    setShowAlert(false);
+    setErrorMessage(null);
+    mutate(data, {
+      onError: (error) => {
+        console.error('Error:', error);
+        setShowAlert(true);
+        setErrorMessage(error.message ?? 'Something went wrong. Please try again later.');
+      },
+      onSuccess: async (response) => {
+        console.log('login response:', response);
+        setItemToLocalStorage('token', response.session.token);
+        await navigate({
+          to: '/overview',
+        });
+      },
+    });
   }
 
   return (
@@ -42,6 +73,31 @@ function LogInComponent() {
           <CardDescription className="max-w-md text-sm">
             Sign in to your Zentry account to continue managing access and identity.
           </CardDescription>
+
+          {showAlert && (
+            <Alert
+              variant="destructive"
+              className="mt-2 border-destructive/30 bg-destructive/[0.08] shadow-sm backdrop-blur-sm"
+            >
+              <CircleAlert className="mt-0.5 size-4" />
+              <AlertTitle className="tracking-[0.14em] uppercase">Login failed</AlertTitle>
+              <AlertDescription className="leading-6 text-destructive/80">
+                {errorMessage}
+              </AlertDescription>
+              <AlertAction>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label="Dismiss error message"
+                  className="text-destructive/70 hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => setShowAlert(false)}
+                >
+                  <X className="size-3.5" />
+                </Button>
+              </AlertAction>
+            </Alert>
+          )}
         </CardHeader>
         <CardContent className="pt-2">
           <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -59,6 +115,7 @@ function LogInComponent() {
                       placeholder="name@example.com"
                       autoComplete="email"
                       type="email"
+                      disabled={isPending}
                     />
                     {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                   </Field>
@@ -77,6 +134,7 @@ function LogInComponent() {
                       placeholder="Enter your password"
                       autoComplete="current-password"
                       type="password"
+                      disabled={isPending}
                     />
                     {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                   </Field>
@@ -87,11 +145,16 @@ function LogInComponent() {
         </CardContent>
         <CardFooter className="flex flex-col items-stretch gap-4 border-t border-foreground/10 pt-6">
           <Field orientation="horizontal" className="justify-between gap-3">
-            <Button type="button" variant="outline" onClick={() => form.reset()}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => form.reset()}
+              disabled={isPending}
+            >
               Reset
             </Button>
-            <Button type="submit" form={formId} className="min-w-32">
-              Sign in
+            <Button type="submit" form={formId} className="min-w-32" disabled={isPending}>
+              {isPending ? <Loader2 className="size-4 animate-spin" /> : 'Sign in'}
             </Button>
           </Field>
           <p className="text-sm text-muted-foreground">

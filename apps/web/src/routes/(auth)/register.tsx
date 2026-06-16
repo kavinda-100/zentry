@@ -15,14 +15,30 @@ import {
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { faker } from '@faker-js/faker';
+import { useMutation } from '@tanstack/react-query';
+import { registerServerFn } from '#/server-fns/auth';
+import { CircleAlert, Loader2, X } from 'lucide-react';
+import { useLocalStorage } from '#/hooks/useLocalStorage.ts';
+import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useState } from 'react';
 
 export const Route = createFileRoute('/(auth)/register')({
   component: RegisterComponent,
 });
 
 function RegisterComponent() {
-  const formId = 'register-form';
+  const [showAlert, setShowAlert] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const navigate = useNavigate();
+  const { setItemToLocalStorage } = useLocalStorage();
+
+  // register mutation
+  const { mutate, isPending } = useMutation({
+    mutationFn: async (data: RegisterSchemaType) => registerServerFn({ data }),
+  });
+
+  const formId = 'register-form';
   const form = useForm<RegisterSchemaType>({
     resolver: standardSchemaResolver(registerSchema),
     defaultValues: {
@@ -34,13 +50,25 @@ function RegisterComponent() {
     },
   });
 
-  function onSubmit(data: RegisterSchemaType) {
-    // Do something with the form values.
+  async function onSubmit(data: RegisterSchemaType) {
     console.info(data);
-    void navigate({
-      to: '/verify-email',
-      search: {
-        email: data.email,
+    setShowAlert(false);
+    setErrorMessage(null);
+    mutate(data, {
+      onError: (error) => {
+        console.error('Error:', error);
+        setShowAlert(true);
+        setErrorMessage(error.message ?? 'Something went wrong. Please try again later.');
+      },
+      onSuccess: async (response, variables) => {
+        console.log('register response:', response);
+        setItemToLocalStorage('token', response.session.token);
+        await navigate({
+          to: '/verify-email',
+          search: {
+            email: variables.email,
+          },
+        });
       },
     });
   }
@@ -53,6 +81,32 @@ function RegisterComponent() {
           <CardDescription className="max-w-md text-sm">
             Set up your Zentry account with your basic details and a secure password.
           </CardDescription>
+
+          {/*  error Alert*/}
+          {showAlert && (
+            <Alert
+              variant="destructive"
+              className="mt-2 border-destructive/30 bg-destructive/[0.08] shadow-sm backdrop-blur-sm"
+            >
+              <CircleAlert className="mt-0.5 size-4" />
+              <AlertTitle className="tracking-[0.14em] uppercase">Registration failed</AlertTitle>
+              <AlertDescription className="leading-6 text-destructive/80">
+                {errorMessage}
+              </AlertDescription>
+              <AlertAction>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label="Dismiss error message"
+                  className="text-destructive/70 hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => setShowAlert(false)}
+                >
+                  <X className="size-3.5" />
+                </Button>
+              </AlertAction>
+            </Alert>
+          )}
         </CardHeader>
         <CardContent className="pt-2">
           <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -69,6 +123,7 @@ function RegisterComponent() {
                       aria-invalid={fieldState.invalid}
                       placeholder="Kavinda"
                       autoComplete="given-name"
+                      disabled={isPending}
                     />
                     {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                   </Field>
@@ -87,6 +142,7 @@ function RegisterComponent() {
                       aria-invalid={fieldState.invalid}
                       placeholder="Perera"
                       autoComplete="family-name"
+                      disabled={isPending}
                     />
                     {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                   </Field>
@@ -106,6 +162,7 @@ function RegisterComponent() {
                       placeholder="name@example.com"
                       autoComplete="email"
                       type="email"
+                      disabled={isPending}
                     />
                     {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                   </Field>
@@ -143,6 +200,7 @@ function RegisterComponent() {
                       placeholder="Enter a secure password"
                       autoComplete="new-password"
                       type="password"
+                      disabled={isPending}
                     />
                     {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                   </Field>
@@ -153,11 +211,16 @@ function RegisterComponent() {
         </CardContent>
         <CardFooter className="flex flex-col items-stretch gap-4 border-t border-foreground/10 pt-6">
           <Field orientation="horizontal" className="justify-between gap-3">
-            <Button type="button" variant="outline" onClick={() => form.reset()}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => form.reset()}
+              disabled={isPending}
+            >
               Reset
             </Button>
-            <Button type="submit" form={formId} className="min-w-32">
-              Create account
+            <Button type="submit" form={formId} className="min-w-32" disabled={isPending}>
+              {isPending ? <Loader2 className={'size-4 animate-spin'} /> : 'Create account'}
             </Button>
           </Field>
           <p className="text-sm text-muted-foreground">

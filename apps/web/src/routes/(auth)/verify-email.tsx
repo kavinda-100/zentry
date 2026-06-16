@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import AuthLayout from '#/layouts/AuthLayout.tsx';
 import { verifyEmailSchema, type VerifyEmailSchemaType } from '@zentry/validation';
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
@@ -16,6 +16,10 @@ import {
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { useEffect, useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import { verifyEmailServerFn } from '#/server-fns/auth';
+import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { CircleAlert, Loader2, X } from 'lucide-react';
 
 export const Route = createFileRoute('/(auth)/verify-email')({
   validateSearch: z.object({
@@ -25,7 +29,15 @@ export const Route = createFileRoute('/(auth)/verify-email')({
 });
 
 function VerifyEmailComponent() {
+  const navigate = useNavigate();
   const [count, setCount] = useState(10 * 60 * 1000); // 10 minutes in milliseconds
+  const [showAlert, setShowAlert] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // register mutation
+  const { mutate, isPending } = useMutation({
+    mutationFn: async (data: VerifyEmailSchemaType) => verifyEmailServerFn({ data }),
+  });
 
   const formId = 'verify-email-form';
   const search = Route.useSearch();
@@ -37,9 +49,23 @@ function VerifyEmailComponent() {
     },
   });
 
-  function onSubmit(data: VerifyEmailSchemaType) {
-    // Do something with the form values.
+  async function onSubmit(data: VerifyEmailSchemaType) {
     console.info(data);
+    setShowAlert(false);
+    setErrorMessage(null);
+    mutate(data, {
+      onError: (error) => {
+        console.error('Error:', error);
+        setShowAlert(true);
+        setErrorMessage(error.message ?? 'Something went wrong. Please try again later.');
+      },
+      onSuccess: async (response, _variables) => {
+        console.log('verify-email response:', response);
+        await navigate({
+          to: '/overview',
+        });
+      },
+    });
   }
 
   // Countdown timer for OTP expiration
@@ -60,6 +86,33 @@ function VerifyEmailComponent() {
           <CardDescription className="max-w-md text-sm">
             Enter the email address you signed up with and the 6-digit code we sent to your inbox.
           </CardDescription>
+
+          {showAlert && (
+            <Alert
+              variant="destructive"
+              className="mt-2 border-destructive/30 bg-destructive/[0.08] shadow-sm backdrop-blur-sm"
+            >
+              <CircleAlert className="mt-0.5 size-4" />
+              <AlertTitle className="tracking-[0.14em] uppercase">
+                Verification failed
+              </AlertTitle>
+              <AlertDescription className="leading-6 text-destructive/80">
+                {errorMessage}
+              </AlertDescription>
+              <AlertAction>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label="Dismiss error message"
+                  className="text-destructive/70 hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => setShowAlert(false)}
+                >
+                  <X className="size-3.5" />
+                </Button>
+              </AlertAction>
+            </Alert>
+          )}
         </CardHeader>
         <CardContent className="pt-2">
           <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -77,6 +130,7 @@ function VerifyEmailComponent() {
                       placeholder="name@example.com"
                       autoComplete="email"
                       type="email"
+                      disabled={isPending}
                     />
                     {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                   </Field>
@@ -96,6 +150,7 @@ function VerifyEmailComponent() {
                       autoComplete="one-time-code"
                       inputMode="numeric"
                       maxLength={6}
+                      disabled={isPending}
                     />
                     {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                   </Field>
@@ -115,11 +170,12 @@ function VerifyEmailComponent() {
                   otp: '',
                 })
               }
+              disabled={isPending}
             >
               Reset
             </Button>
-            <Button type="submit" form={formId} className="min-w-32">
-              Verify email
+            <Button type="submit" form={formId} className="min-w-32" disabled={isPending}>
+              {isPending ? <Loader2 className="size-4 animate-spin" /> : 'Verify email'}
             </Button>
           </Field>
           <p className="text-sm text-muted-foreground">

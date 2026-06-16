@@ -31,6 +31,7 @@
     "@zentry/database": "workspace:*",
     "@zentry/types": "workspace:*",
     "@zentry/validation": "workspace:*",
+    "axios": "^1.18.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.577.0",
