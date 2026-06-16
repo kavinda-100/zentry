@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as dashboardOverviewRouteImport } from './routes/(dashboard)/overview'
+import { Route as authVerifyEmailRouteImport } from './routes/(auth)/verify-email'
 import { Route as authRegisterRouteImport } from './routes/(auth)/register'
 import { Route as authLoginRouteImport } from './routes/(auth)/login'
 
@@ -22,6 +23,11 @@ const IndexRoute = IndexRouteImport.update({
 const dashboardOverviewRoute = dashboardOverviewRouteImport.update({
   id: '/(dashboard)/overview',
   path: '/overview',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const authVerifyEmailRoute = authVerifyEmailRouteImport.update({
+  id: '/(auth)/verify-email',
+  path: '/verify-email',
   getParentRoute: () => rootRouteImport,
 } as any)
 const authRegisterRoute = authRegisterRouteImport.update({
@@ -39,12 +45,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof authLoginRoute
   '/register': typeof authRegisterRoute
+  '/verify-email': typeof authVerifyEmailRoute
   '/overview': typeof dashboardOverviewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof authLoginRoute
   '/register': typeof authRegisterRoute
+  '/verify-email': typeof authVerifyEmailRoute
   '/overview': typeof dashboardOverviewRoute
 }
 export interface FileRoutesById {
@@ -52,18 +60,20 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/(auth)/login': typeof authLoginRoute
   '/(auth)/register': typeof authRegisterRoute
+  '/(auth)/verify-email': typeof authVerifyEmailRoute
   '/(dashboard)/overview': typeof dashboardOverviewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/register' | '/overview'
+  fullPaths: '/' | '/login' | '/register' | '/verify-email' | '/overview'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/register' | '/overview'
+  to: '/' | '/login' | '/register' | '/verify-email' | '/overview'
   id:
     | '__root__'
     | '/'
     | '/(auth)/login'
     | '/(auth)/register'
+    | '/(auth)/verify-email'
     | '/(dashboard)/overview'
   fileRoutesById: FileRoutesById
 }
@@ -71,6 +81,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   authLoginRoute: typeof authLoginRoute
   authRegisterRoute: typeof authRegisterRoute
+  authVerifyEmailRoute: typeof authVerifyEmailRoute
   dashboardOverviewRoute: typeof dashboardOverviewRoute
 }
 
@@ -88,6 +99,13 @@ declare module '@tanstack/react-router' {
       path: '/overview'
       fullPath: '/overview'
       preLoaderRoute: typeof dashboardOverviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(auth)/verify-email': {
+      id: '/(auth)/verify-email'
+      path: '/verify-email'
+      fullPath: '/verify-email'
+      preLoaderRoute: typeof authVerifyEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(auth)/register': {
@@ -111,6 +129,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   authLoginRoute: authLoginRoute,
   authRegisterRoute: authRegisterRoute,
+  authVerifyEmailRoute: authVerifyEmailRoute,
   dashboardOverviewRoute: dashboardOverviewRoute,
 }
 export const routeTree = rootRouteImport
