@@ -9,6 +9,7 @@ import appCss from '../styles.css?url';
 import type { QueryClient } from '@tanstack/react-query';
 import * as React from 'react';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import NotFoundComponent from '#/components/NotFoundComponent.tsx';
 
 interface MyRouterContext {
   queryClient: QueryClient;
@@ -25,7 +26,8 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'TanStack Start Starter',
+        title: 'Zentry',
+        description: 'Zentry - Auth Service for your apps',
       },
     ],
     links: [
@@ -36,6 +38,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     ],
   }),
   shellComponent: RootDocument,
+  notFoundComponent: () => <NotFoundComponent />,
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {
