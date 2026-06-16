@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/card';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { useEffect, useState } from 'react';
 
 export const Route = createFileRoute('/(auth)/verify-email')({
   validateSearch: z.object({
@@ -24,6 +25,8 @@ export const Route = createFileRoute('/(auth)/verify-email')({
 });
 
 function VerifyEmailComponent() {
+  const [count, setCount] = useState(10 * 60 * 1000); // 10 minutes in milliseconds
+
   const formId = 'verify-email-form';
   const search = Route.useSearch();
   const form = useForm<VerifyEmailSchemaType>({
@@ -38,6 +41,16 @@ function VerifyEmailComponent() {
     // Do something with the form values.
     console.info(data);
   }
+
+  // Countdown timer for OTP expiration
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (count <= 0) return clearInterval(interval);
+      setCount((prevCount) => prevCount - 1000);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [count]);
 
   return (
     <AuthLayout>
@@ -109,6 +122,28 @@ function VerifyEmailComponent() {
               Verify email
             </Button>
           </Field>
+          <p className="text-sm text-muted-foreground">
+            Didn&apos;t receive the code?{' '}
+            <button
+              type="button"
+              onClick={() => console.log('resend email')}
+              className="font-medium text-foreground underline underline-offset-4 cursor-pointer"
+            >
+              Resend
+            </button>
+          </p>
+
+          <p className="text-sm text-muted-foreground">
+            {count > 0 ? (
+              <span className="text-sm text-muted-foreground">
+                Code expires in {Math.floor(count / 1000 / 60)} minutes and{' '}
+                {Math.floor(count / 1000) % 60} seconds
+              </span>
+            ) : (
+              <span className="text-sm text-destructive">Code expired</span>
+            )}
+          </p>
+
           <p className="text-sm text-muted-foreground">
             Need to go back?{' '}
             <Link to="/login" className="font-medium text-foreground underline underline-offset-4">
