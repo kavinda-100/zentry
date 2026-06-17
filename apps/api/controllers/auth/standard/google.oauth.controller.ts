@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { logger } from '../../../utils/logger';
 import { getGoogleAuthUrl, getGoogleUserInfo } from '../../../lib/OAuth/google';
-import { ErrorResponse, OKResponse } from '../../../utils/responseHandles';
+import { ErrorResponse } from '../../../utils/responseHandles';
 import { StatusCodes } from '../../../utils/statusCodes';
 import { GoogleOAuthResultSchema } from '@zentry/validation/src/auth/oAuth/google';
 import { formatZodIssues } from '@zentry/validation/src/utils/zod';
@@ -17,11 +17,15 @@ import { createAuthSessionInTheRedis } from '../../../lib/redis/auth.redis';
 export const googleOauth = async (req: Request, res: Response, next: NextFunction) => {
   try {
     logger.info('Google Oauth route hit');
-    const { callbackurl } = req.params;
-    console.log('callbackurl', callbackurl);
 
-    // get the Google consent page url
-    const url = getGoogleAuthUrl();
+    // Read the callback target from query params (e.g., /api/auth/google?callbackUrl=http://localhost:3000/dashboard)
+    // Defaulting to localhost:3000 if none is supplied to prevent empty routing drops
+    const targetRedirectUrl = (req.query.callbackUrl as string) || 'http://localhost:3000';
+
+    logger.debug({ targetRedirectUrl }, 'Forwarding UI target path into OAuth state matrix');
+
+    // Pass the destination URL into the state parameter
+    const url = getGoogleAuthUrl(targetRedirectUrl);
 
     // redirect the user to the Google consent page
     res.redirect(url);
@@ -40,6 +44,10 @@ export const googleOauthCallback = async (req: Request, res: Response, next: Nex
 
     // get the code from the query parameters
     const code = req.query.code as string;
+
+    // Extract the target destination string passed back to us by Google
+    const clientRedirectUrl = (req.query.state as string) || 'http://localhost:3000';
+
     if (!code || typeof code !== 'string') {
       const requestQuery = JSON.stringify(req.query);
       logger.debug({ requestQuery }, 'No code found in the query parameters');
@@ -203,19 +211,14 @@ export const googleOauthCallback = async (req: Request, res: Response, next: Nex
       maxAge: DEFAULT_SESSION_EXPIRY_IN_SECONDS * 1000,
     });
 
-    const resBody = {
-      session: {
-        token: sessionToken,
-      },
-    };
+    // Safely append the token payload to the redirect URL
+    const targetUrl = new URL(clientRedirectUrl);
+    targetUrl.searchParams.set('token', sessionToken);
 
-    logger.info('Google OAuth completed successfully. Redirecting back to web app.');
-    OKResponse(
-      res,
-      StatusCodes.OK,
-      'Google OAuth completed successfully. Redirecting back to web app.',
-      resBody,
-    );
+    logger.info({ redirectTarget: targetUrl.toString() }, 'Redirecting to UI with session payload');
+
+    // Perform the redirect
+    return res.redirect(targetUrl.toString());
   } catch (e) {
     next(e);
   }

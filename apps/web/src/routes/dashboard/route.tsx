@@ -3,13 +3,34 @@ import DashboardSideBar from '#/components/dashboard/DashboardSideBar.tsx';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar.tsx';
 import * as React from 'react';
 import { ModeToggle } from '#/components/ModeToggle.tsx';
+import { useEffect } from 'react';
+import { z } from 'zod';
+import { useLocalStorage } from '#/hooks/useLocalStorage.ts';
+import { SESSION_TOKEN_KEY } from '#/constants';
 
 export const Route = createFileRoute('/dashboard')({
+  validateSearch: z.object({
+    token: z.string().optional(),
+  }),
   component: RouteComponent,
 });
 
 // Dashboard Layout
 function RouteComponent() {
+  const { setItemToLocalStorage } = useLocalStorage();
+  const { token } = Route.useSearch();
+
+  // set token to local storage
+  // this is for the case when user is redirected from Google login
+  // it returns the token in the URL search params, we need to store it in local storage for future use
+  // `https://zentry.app/dashboard?token=abc123...`
+  useEffect(() => {
+    if (!token) return;
+
+    setItemToLocalStorage<string>(SESSION_TOKEN_KEY, token);
+  }, [setItemToLocalStorage, token]);
+
+
   return (
     <SidebarProvider
       style={

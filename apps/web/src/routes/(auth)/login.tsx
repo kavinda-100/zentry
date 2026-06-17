@@ -89,7 +89,7 @@ function LogInComponent() {
         {showAlert && (
           <Alert
             variant="destructive"
-            className="mt-2 border-destructive/30 bg-destructive/[0.08] shadow-sm backdrop-blur-sm"
+            className="mt-2 border-destructive/30 bg-destructive/8 shadow-sm backdrop-blur-sm"
           >
             <CircleAlert className="mt-0.5 size-4" />
             <AlertTitle className="tracking-[0.14em] uppercase">Login failed</AlertTitle>
