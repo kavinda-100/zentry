@@ -21,6 +21,9 @@ import { CircleAlert, Loader2, X } from 'lucide-react';
 import { useLocalStorage } from '#/hooks/useLocalStorage.ts';
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useState } from 'react';
+import { LAST_AUTHENTICATED_METHOD, SESSION_TOKEN_KEY } from '#/constants';
+import GoogleButton from '#/components/auth/GoogleButton.tsx';
+import type { LastAuthenticatedMethodType } from '#/types';
 
 export const Route = createFileRoute('/(auth)/register')({
   component: RegisterComponent,
@@ -62,7 +65,8 @@ function RegisterComponent() {
       },
       onSuccess: async (response, variables) => {
         console.log('register response:', response);
-        setItemToLocalStorage('token', response.session.token);
+        setItemToLocalStorage<string>(SESSION_TOKEN_KEY, response.session.token);
+        setItemToLocalStorage<LastAuthenticatedMethodType>(LAST_AUTHENTICATED_METHOD, 'credential');
         await navigate({
           to: '/verify-email',
           search: {
@@ -223,6 +227,14 @@ function RegisterComponent() {
               {isPending ? <Loader2 className={'size-4 animate-spin'} /> : 'Create account'}
             </Button>
           </Field>
+
+          {/*  google button*/}
+          <GoogleButton
+            setShowAlert={setShowAlert}
+            setErrorMessage={setErrorMessage}
+            classnames="mt-3"
+          />
+
           <p className="text-sm text-muted-foreground">
             Already have an account?{' '}
             <Link to="/login" className="font-medium text-foreground underline underline-offset-4">
