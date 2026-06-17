@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button.tsx';
 const routes = [
   {
     name: 'Overview',
-    path: '/dashboard/overview',
+    path: '/dashboard',
     icon: <Component />,
   },
   {
@@ -26,11 +26,10 @@ type DashboardSideBarProps = {
 };
 
 const DashboardSideBar = ({ className }: DashboardSideBarProps) => {
-  ``;
   return (
     <aside className={cn('w-64 border-r', className)}>
       {routes.map((route) => (
-        <Button key={route.path} asChild variant="ghost" className="justify-start">
+        <Button key={route.path} asChild variant="ghost" className="justify-start w-full">
           <Link to={route.path}>
             {route.icon}
             <span className="ml-2">{route.name}</span>

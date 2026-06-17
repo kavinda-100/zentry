@@ -61,7 +61,7 @@ function VerifyEmailComponent() {
       onSuccess: async (response, _variables) => {
         console.log('verify-email response:', response);
         await navigate({
-          to: '/dashboard/overview',
+          to: '/dashboard',
         });
       },
     });

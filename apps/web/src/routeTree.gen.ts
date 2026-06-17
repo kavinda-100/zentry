@@ -9,15 +9,21 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
 import { Route as authRouteRouteImport } from './routes/(auth)/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as authVerifyEmailRouteImport } from './routes/(auth)/verify-email'
 import { Route as authRegisterRouteImport } from './routes/(auth)/register'
 import { Route as authLoginRouteImport } from './routes/(auth)/login'
-import { Route as dashboardDashboardSettingsRouteImport } from './routes/(dashboard)/dashboard.settings'
-import { Route as dashboardDashboardProjectsRouteImport } from './routes/(dashboard)/dashboard.projects'
-import { Route as dashboardDashboardOverviewRouteImport } from './routes/(dashboard)/dashboard.overview'
+import { Route as DashboardSettingsIndexRouteImport } from './routes/dashboard/settings/index'
+import { Route as DashboardProjectsIndexRouteImport } from './routes/dashboard/projects/index'
 
+const DashboardRouteRoute = DashboardRouteRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const authRouteRoute = authRouteRouteImport.update({
   id: '/(auth)',
   getParentRoute: () => rootRouteImport,
@@ -26,6 +32,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardRouteRoute,
 } as any)
 const authVerifyEmailRoute = authVerifyEmailRouteImport.update({
   id: '/verify-email',
@@ -42,95 +53,96 @@ const authLoginRoute = authLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => authRouteRoute,
 } as any)
-const dashboardDashboardSettingsRoute =
-  dashboardDashboardSettingsRouteImport.update({
-    id: '/(dashboard)/dashboard/settings',
-    path: '/dashboard/settings',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const dashboardDashboardProjectsRoute =
-  dashboardDashboardProjectsRouteImport.update({
-    id: '/(dashboard)/dashboard/projects',
-    path: '/dashboard/projects',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const dashboardDashboardOverviewRoute =
-  dashboardDashboardOverviewRouteImport.update({
-    id: '/(dashboard)/dashboard/overview',
-    path: '/dashboard/overview',
-    getParentRoute: () => rootRouteImport,
-  } as any)
+const DashboardSettingsIndexRoute = DashboardSettingsIndexRouteImport.update({
+  id: '/settings/',
+  path: '/settings/',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardProjectsIndexRoute = DashboardProjectsIndexRouteImport.update({
+  id: '/projects/',
+  path: '/projects/',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRouteRouteWithChildren
   '/login': typeof authLoginRoute
   '/register': typeof authRegisterRoute
   '/verify-email': typeof authVerifyEmailRoute
-  '/dashboard/overview': typeof dashboardDashboardOverviewRoute
-  '/dashboard/projects': typeof dashboardDashboardProjectsRoute
-  '/dashboard/settings': typeof dashboardDashboardSettingsRoute
+  '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/projects/': typeof DashboardProjectsIndexRoute
+  '/dashboard/settings/': typeof DashboardSettingsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof authLoginRoute
   '/register': typeof authRegisterRoute
   '/verify-email': typeof authVerifyEmailRoute
-  '/dashboard/overview': typeof dashboardDashboardOverviewRoute
-  '/dashboard/projects': typeof dashboardDashboardProjectsRoute
-  '/dashboard/settings': typeof dashboardDashboardSettingsRoute
+  '/dashboard': typeof DashboardIndexRoute
+  '/dashboard/projects': typeof DashboardProjectsIndexRoute
+  '/dashboard/settings': typeof DashboardSettingsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/(auth)': typeof authRouteRouteWithChildren
+  '/dashboard': typeof DashboardRouteRouteWithChildren
   '/(auth)/login': typeof authLoginRoute
   '/(auth)/register': typeof authRegisterRoute
   '/(auth)/verify-email': typeof authVerifyEmailRoute
-  '/(dashboard)/dashboard/overview': typeof dashboardDashboardOverviewRoute
-  '/(dashboard)/dashboard/projects': typeof dashboardDashboardProjectsRoute
-  '/(dashboard)/dashboard/settings': typeof dashboardDashboardSettingsRoute
+  '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/projects/': typeof DashboardProjectsIndexRoute
+  '/dashboard/settings/': typeof DashboardSettingsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/dashboard'
     | '/login'
     | '/register'
     | '/verify-email'
-    | '/dashboard/overview'
-    | '/dashboard/projects'
-    | '/dashboard/settings'
+    | '/dashboard/'
+    | '/dashboard/projects/'
+    | '/dashboard/settings/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
     | '/register'
     | '/verify-email'
-    | '/dashboard/overview'
+    | '/dashboard'
     | '/dashboard/projects'
     | '/dashboard/settings'
   id:
     | '__root__'
     | '/'
     | '/(auth)'
+    | '/dashboard'
     | '/(auth)/login'
     | '/(auth)/register'
     | '/(auth)/verify-email'
-    | '/(dashboard)/dashboard/overview'
-    | '/(dashboard)/dashboard/projects'
-    | '/(dashboard)/dashboard/settings'
+    | '/dashboard/'
+    | '/dashboard/projects/'
+    | '/dashboard/settings/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   authRouteRoute: typeof authRouteRouteWithChildren
-  dashboardDashboardOverviewRoute: typeof dashboardDashboardOverviewRoute
-  dashboardDashboardProjectsRoute: typeof dashboardDashboardProjectsRoute
-  dashboardDashboardSettingsRoute: typeof dashboardDashboardSettingsRoute
+  DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/(auth)': {
       id: '/(auth)'
       path: ''
@@ -144,6 +156,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
     }
     '/(auth)/verify-email': {
       id: '/(auth)/verify-email'
@@ -166,26 +185,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof authLoginRouteImport
       parentRoute: typeof authRouteRoute
     }
-    '/(dashboard)/dashboard/settings': {
-      id: '/(dashboard)/dashboard/settings'
-      path: '/dashboard/settings'
-      fullPath: '/dashboard/settings'
-      preLoaderRoute: typeof dashboardDashboardSettingsRouteImport
-      parentRoute: typeof rootRouteImport
+    '/dashboard/settings/': {
+      id: '/dashboard/settings/'
+      path: '/settings'
+      fullPath: '/dashboard/settings/'
+      preLoaderRoute: typeof DashboardSettingsIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
     }
-    '/(dashboard)/dashboard/projects': {
-      id: '/(dashboard)/dashboard/projects'
-      path: '/dashboard/projects'
-      fullPath: '/dashboard/projects'
-      preLoaderRoute: typeof dashboardDashboardProjectsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/(dashboard)/dashboard/overview': {
-      id: '/(dashboard)/dashboard/overview'
-      path: '/dashboard/overview'
-      fullPath: '/dashboard/overview'
-      preLoaderRoute: typeof dashboardDashboardOverviewRouteImport
-      parentRoute: typeof rootRouteImport
+    '/dashboard/projects/': {
+      id: '/dashboard/projects/'
+      path: '/projects'
+      fullPath: '/dashboard/projects/'
+      preLoaderRoute: typeof DashboardProjectsIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
     }
   }
 }
@@ -206,12 +218,26 @@ const authRouteRouteWithChildren = authRouteRoute._addFileChildren(
   authRouteRouteChildren,
 )
 
+interface DashboardRouteRouteChildren {
+  DashboardIndexRoute: typeof DashboardIndexRoute
+  DashboardProjectsIndexRoute: typeof DashboardProjectsIndexRoute
+  DashboardSettingsIndexRoute: typeof DashboardSettingsIndexRoute
+}
+
+const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
+  DashboardIndexRoute: DashboardIndexRoute,
+  DashboardProjectsIndexRoute: DashboardProjectsIndexRoute,
+  DashboardSettingsIndexRoute: DashboardSettingsIndexRoute,
+}
+
+const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
+  DashboardRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   authRouteRoute: authRouteRouteWithChildren,
-  dashboardDashboardOverviewRoute: dashboardDashboardOverviewRoute,
-  dashboardDashboardProjectsRoute: dashboardDashboardProjectsRoute,
-  dashboardDashboardSettingsRoute: dashboardDashboardSettingsRoute,
+  DashboardRouteRoute: DashboardRouteRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
