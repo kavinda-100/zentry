@@ -24,7 +24,11 @@ const GoogleButton = ({ classnames, setShowAlert, setErrorMessage }: GoogleButto
     setErrorMessage(null);
     setItemToLocalStorage<LastAuthenticatedMethodType>(LAST_AUTHENTICATED_METHOD, 'google');
 
-    window.location.assign(new URL(`${env.VITE_API_URL}/auth/providers/google`).toString());
+    window.location.assign(
+      new URL(
+        `${env.VITE_API_URL}/auth/providers/google?callbackurl=http://localhost:300/dashboard`,
+      ).toString(),
+    );
   };
 
   return (
