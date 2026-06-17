@@ -10,19 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as DashboardOverviewRouteImport } from './routes/dashboard/overview'
 import { Route as authVerifyEmailRouteImport } from './routes/(auth)/verify-email'
 import { Route as authRegisterRouteImport } from './routes/(auth)/register'
 import { Route as authLoginRouteImport } from './routes/(auth)/login'
+import { Route as aboutAboutRouteImport } from './routes/(about)/about'
+import { Route as dashboardDashboardSettingsRouteImport } from './routes/(dashboard)/dashboard.settings'
+import { Route as dashboardDashboardProjectsRouteImport } from './routes/(dashboard)/dashboard.projects'
+import { Route as dashboardDashboardOverviewRouteImport } from './routes/(dashboard)/dashboard.overview'
+import { Route as aboutAboutMeRouteImport } from './routes/(about)/about.me'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardOverviewRoute = DashboardOverviewRouteImport.update({
-  id: '/dashboard/overview',
-  path: '/dashboard/overview',
   getParentRoute: () => rootRouteImport,
 } as any)
 const authVerifyEmailRoute = authVerifyEmailRouteImport.update({
@@ -40,54 +39,114 @@ const authLoginRoute = authLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const aboutAboutRoute = aboutAboutRouteImport.update({
+  id: '/(about)/about',
+  path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const dashboardDashboardSettingsRoute =
+  dashboardDashboardSettingsRouteImport.update({
+    id: '/(dashboard)/dashboard/settings',
+    path: '/dashboard/settings',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const dashboardDashboardProjectsRoute =
+  dashboardDashboardProjectsRouteImport.update({
+    id: '/(dashboard)/dashboard/projects',
+    path: '/dashboard/projects',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const dashboardDashboardOverviewRoute =
+  dashboardDashboardOverviewRouteImport.update({
+    id: '/(dashboard)/dashboard/overview',
+    path: '/dashboard/overview',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const aboutAboutMeRoute = aboutAboutMeRouteImport.update({
+  id: '/me',
+  path: '/me',
+  getParentRoute: () => aboutAboutRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof aboutAboutRouteWithChildren
   '/login': typeof authLoginRoute
   '/register': typeof authRegisterRoute
   '/verify-email': typeof authVerifyEmailRoute
-  '/dashboard/overview': typeof DashboardOverviewRoute
+  '/about/me': typeof aboutAboutMeRoute
+  '/dashboard/overview': typeof dashboardDashboardOverviewRoute
+  '/dashboard/projects': typeof dashboardDashboardProjectsRoute
+  '/dashboard/settings': typeof dashboardDashboardSettingsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof aboutAboutRouteWithChildren
   '/login': typeof authLoginRoute
   '/register': typeof authRegisterRoute
   '/verify-email': typeof authVerifyEmailRoute
-  '/dashboard/overview': typeof DashboardOverviewRoute
+  '/about/me': typeof aboutAboutMeRoute
+  '/dashboard/overview': typeof dashboardDashboardOverviewRoute
+  '/dashboard/projects': typeof dashboardDashboardProjectsRoute
+  '/dashboard/settings': typeof dashboardDashboardSettingsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/(about)/about': typeof aboutAboutRouteWithChildren
   '/(auth)/login': typeof authLoginRoute
   '/(auth)/register': typeof authRegisterRoute
   '/(auth)/verify-email': typeof authVerifyEmailRoute
-  '/dashboard/overview': typeof DashboardOverviewRoute
+  '/(about)/about/me': typeof aboutAboutMeRoute
+  '/(dashboard)/dashboard/overview': typeof dashboardDashboardOverviewRoute
+  '/(dashboard)/dashboard/projects': typeof dashboardDashboardProjectsRoute
+  '/(dashboard)/dashboard/settings': typeof dashboardDashboardSettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/about'
     | '/login'
     | '/register'
     | '/verify-email'
+    | '/about/me'
     | '/dashboard/overview'
+    | '/dashboard/projects'
+    | '/dashboard/settings'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/register' | '/verify-email' | '/dashboard/overview'
+  to:
+    | '/'
+    | '/about'
+    | '/login'
+    | '/register'
+    | '/verify-email'
+    | '/about/me'
+    | '/dashboard/overview'
+    | '/dashboard/projects'
+    | '/dashboard/settings'
   id:
     | '__root__'
     | '/'
+    | '/(about)/about'
     | '/(auth)/login'
     | '/(auth)/register'
     | '/(auth)/verify-email'
-    | '/dashboard/overview'
+    | '/(about)/about/me'
+    | '/(dashboard)/dashboard/overview'
+    | '/(dashboard)/dashboard/projects'
+    | '/(dashboard)/dashboard/settings'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  aboutAboutRoute: typeof aboutAboutRouteWithChildren
   authLoginRoute: typeof authLoginRoute
   authRegisterRoute: typeof authRegisterRoute
   authVerifyEmailRoute: typeof authVerifyEmailRoute
-  DashboardOverviewRoute: typeof DashboardOverviewRoute
+  dashboardDashboardOverviewRoute: typeof dashboardDashboardOverviewRoute
+  dashboardDashboardProjectsRoute: typeof dashboardDashboardProjectsRoute
+  dashboardDashboardSettingsRoute: typeof dashboardDashboardSettingsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -97,13 +156,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard/overview': {
-      id: '/dashboard/overview'
-      path: '/dashboard/overview'
-      fullPath: '/dashboard/overview'
-      preLoaderRoute: typeof DashboardOverviewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(auth)/verify-email': {
@@ -127,15 +179,65 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof authLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(about)/about': {
+      id: '/(about)/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof aboutAboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(dashboard)/dashboard/settings': {
+      id: '/(dashboard)/dashboard/settings'
+      path: '/dashboard/settings'
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof dashboardDashboardSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(dashboard)/dashboard/projects': {
+      id: '/(dashboard)/dashboard/projects'
+      path: '/dashboard/projects'
+      fullPath: '/dashboard/projects'
+      preLoaderRoute: typeof dashboardDashboardProjectsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(dashboard)/dashboard/overview': {
+      id: '/(dashboard)/dashboard/overview'
+      path: '/dashboard/overview'
+      fullPath: '/dashboard/overview'
+      preLoaderRoute: typeof dashboardDashboardOverviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(about)/about/me': {
+      id: '/(about)/about/me'
+      path: '/me'
+      fullPath: '/about/me'
+      preLoaderRoute: typeof aboutAboutMeRouteImport
+      parentRoute: typeof aboutAboutRoute
+    }
   }
 }
 
+interface aboutAboutRouteChildren {
+  aboutAboutMeRoute: typeof aboutAboutMeRoute
+}
+
+const aboutAboutRouteChildren: aboutAboutRouteChildren = {
+  aboutAboutMeRoute: aboutAboutMeRoute,
+}
+
+const aboutAboutRouteWithChildren = aboutAboutRoute._addFileChildren(
+  aboutAboutRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  aboutAboutRoute: aboutAboutRouteWithChildren,
   authLoginRoute: authLoginRoute,
   authRegisterRoute: authRegisterRoute,
   authVerifyEmailRoute: authVerifyEmailRoute,
-  DashboardOverviewRoute: DashboardOverviewRoute,
+  dashboardDashboardOverviewRoute: dashboardDashboardOverviewRoute,
+  dashboardDashboardProjectsRoute: dashboardDashboardProjectsRoute,
+  dashboardDashboardSettingsRoute: dashboardDashboardSettingsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
