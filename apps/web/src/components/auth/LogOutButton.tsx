@@ -31,7 +31,12 @@ const LogOutButton = () => {
   };
 
   return (
-    <Button className={'w-full'} variant="outline" onClick={handleLogOut} disabled={isPending}>
+    <Button
+      className={'w-full cursor-pointer'}
+      variant="outline"
+      onClick={handleLogOut}
+      disabled={isPending}
+    >
       <LiaSignOutAltSolid className="h-5 w-5 mr-2" />
       {isPending ? <Loader2Icon className="animate-spin size-4" /> : 'Log out'}
     </Button>
