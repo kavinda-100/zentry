@@ -30,7 +30,7 @@ const LogOutButton = () => {
     <Button
       type="button"
       className={'w-full cursor-pointer'}
-      variant="outline"
+      variant="destructive"
       onClick={handleLogOut}
       disabled={isPending}
     >

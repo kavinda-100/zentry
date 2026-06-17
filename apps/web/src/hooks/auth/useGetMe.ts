@@ -8,7 +8,6 @@ export const useGetMe = () => {
     queryKey: ['me'],
     queryFn: async () => {
       const response = await api.get('/auth/me');
-      console.log(response.data);
 
       // validate the response
       const validator = createOkResponseSchema(meUserDataSchema);
