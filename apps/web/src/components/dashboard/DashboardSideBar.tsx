@@ -60,16 +60,21 @@ const DashboardSideBar = ({ className }: DashboardSideBarProps) => {
       }
     >
       <SidebarHeader className="gap-3 border-b border-(--line) bg-(--surface) px-4 py-5">
-        <div className="px-3">
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-(--kicker)">
-            Workspace
-          </p>
-          <h1 className="mt-2 font-heading text-xl font-semibold tracking-[0.08em] text-slate-950 dark:text-slate-100">
-            User Name
-          </h1>
-          <p className="mt-2 text-xs leading-6 text-(--sea-ink-soft) group-data-[collapsible=icon]:hidden">
-            Manage projects, review activity, and update workspace settings.
-          </p>
+        <div className="flex items-center gap-3 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+            U
+          </div>
+          <div className="min-w-0 group-data-[collapsible=icon]:hidden">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-(--kicker)">
+              Workspace
+            </p>
+            <h1 className="mt-2 truncate font-heading text-xl font-semibold tracking-[0.08em] text-slate-950 dark:text-slate-100">
+              User Name
+            </h1>
+            <p className="mt-2 text-xs leading-6 text-(--sea-ink-soft)">
+              Manage projects, review activity, and update workspace settings.
+            </p>
+          </div>
         </div>
       </SidebarHeader>
 
