@@ -42,7 +42,7 @@ const GoogleButton = ({ classnames, setShowAlert, setErrorMessage }: GoogleButto
         setItemToLocalStorage<string>(SESSION_TOKEN_KEY, response.session.token);
         setItemToLocalStorage<LastAuthenticatedMethodType>(LAST_AUTHENTICATED_METHOD, 'google');
         await navigate({
-          to: '/overview',
+          to: '/dashboard/overview',
         });
       },
     });

@@ -62,7 +62,7 @@ function VerifyEmailComponent() {
       onSuccess: async (response, _variables) => {
         console.log('verify-email response:', response);
         await navigate({
-          to: '/overview',
+          to: '/dashboard/overview',
         });
       },
     });
@@ -93,9 +93,7 @@ function VerifyEmailComponent() {
               className="mt-2 border-destructive/30 bg-destructive/[0.08] shadow-sm backdrop-blur-sm"
             >
               <CircleAlert className="mt-0.5 size-4" />
-              <AlertTitle className="tracking-[0.14em] uppercase">
-                Verification failed
-              </AlertTitle>
+              <AlertTitle className="tracking-[0.14em] uppercase">Verification failed</AlertTitle>
               <AlertDescription className="leading-6 text-destructive/80">
                 {errorMessage}
               </AlertDescription>

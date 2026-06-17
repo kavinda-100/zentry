@@ -66,7 +66,7 @@ function LogInComponent() {
         setItemToLocalStorage<string>(SESSION_TOKEN_KEY, response.session.token);
         setItemToLocalStorage<LastAuthenticatedMethodType>(LAST_AUTHENTICATED_METHOD, 'credential');
         await navigate({
-          to: '/overview',
+          to: '/dashboard/overview',
         });
       },
     });
