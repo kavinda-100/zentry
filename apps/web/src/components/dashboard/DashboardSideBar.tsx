@@ -1,33 +1,35 @@
-import { Cog, Component, FolderKanban, Menu } from 'lucide-react';
-import { cn } from '#/lib/utils.ts';
+import { Cog, Component, FolderKanban } from 'lucide-react';
 import { Link, useRouterState } from '@tanstack/react-router';
-import { Button } from '@/components/ui/button.tsx';
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
-import { useIsMobile } from '#/hooks/use-mobile.ts';
-import { useState } from 'react';
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarSeparator,
+} from '@/components/ui/sidebar.tsx';
+import * as React from 'react';
+import { buttonVariants } from '#/components/ui/button.tsx';
 
 const routes = [
   {
     name: 'Overview',
     path: '/dashboard',
-    icon: <Component />,
+    icon: Component,
   },
   {
     name: 'Apps',
     path: '/dashboard/projects',
-    icon: <FolderKanban />,
+    icon: FolderKanban,
   },
   {
     name: 'Settings',
     path: '/dashboard/settings',
-    icon: <Cog />,
+    icon: Cog,
   },
 ];
 
@@ -36,9 +38,7 @@ type DashboardSideBarProps = {
 };
 
 const DashboardSideBar = ({ className }: DashboardSideBarProps) => {
-  const isMobile = useIsMobile();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const [open, setOpen] = useState(false);
 
   const isRouteActive = (path: string) => {
     if (path === '/dashboard') {
@@ -48,92 +48,61 @@ const DashboardSideBar = ({ className }: DashboardSideBarProps) => {
     return pathname.startsWith(path);
   };
 
-  const navItems = (
-    <nav className="flex flex-col gap-2">
-      {routes.map(({ name, path, icon }) => {
-        const isActive = isRouteActive(path);
-
-        return (
-          <Button
-            key={path}
-            asChild
-            variant={isActive ? 'default' : 'ghost'}
-            className={'h-14 w-full justify-start px-4 text-[0.78rem] tracking-[0.16em]'}
-          >
-            <Link to={path} onClick={() => setOpen(false)}>
-              <span className={'text-black/70'}>{icon}</span>
-              <span className={'text-black/70'}>{name}</span>
-            </Link>
-          </Button>
-        );
-      })}
-    </nav>
-  );
-
-  if (isMobile) {
-    return (
-      <>
-        <div
-          className={cn(
-            'sticky top-0 z-20 border-b border-(--line) bg-(--header-bg) backdrop-blur-xl',
-            className,
-          )}
-        >
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="min-w-0">
-              <p className="text-md font-semibold uppercase tracking-[0.22em] text-(--kicker)">
-                Hi User
-              </p>
-              <p className="mt-2 text-xs leading-6 text-(--sea-ink-soft)">
-                Manage projects, review activity, and update workspace settings.
-              </p>
-            </div>
-            <Sheet open={open} onOpenChange={setOpen}>
-              <SheetTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon-sm"
-                  className="border-(--line) bg-(--surface-strong) text-(--sea-ink)"
-                  aria-label="Open dashboard navigation"
-                >
-                  <Menu className="size-4" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent
-                side="left"
-                className="w-[18rem] border-r border-(--line) bg-(--surface-strong) px-0"
-              >
-                <SheetHeader className="border-b border-(--line) px-5 py-5 text-left">
-                  <SheetTitle className="text-(--sea-ink)">Dashboard</SheetTitle>
-                  <SheetDescription className="text-(--sea-ink-soft)">
-                    Move between overview, apps, and settings.
-                  </SheetDescription>
-                </SheetHeader>
-                <div className="px-4 py-5">{navItems}</div>
-              </SheetContent>
-            </Sheet>
-          </div>
-        </div>
-      </>
-    );
-  }
-
   return (
-    <aside
-      className={cn(
-        'hidden h-screen w-72 shrink-0 border-r border-(--line) bg-(--surface) md:flex md:flex-col',
-        className,
-      )}
+    <Sidebar
+      collapsible="icon"
+      className={className}
+      style={
+        {
+          '--sidebar-width': '18rem',
+          '--sidebar-width-icon': '4.5rem',
+        } as React.CSSProperties
+      }
     >
-      <div className="border-b border-(--line) px-6 py-6">
-        <p className="text-md font-semibold uppercase tracking-[0.22em] text-(--kicker)">Hi User</p>
-        <p className="mt-2 text-xs leading-6 text-(--sea-ink-soft)">
-          Manage projects, review activity, and update workspace settings.
-        </p>
-      </div>
-      <div className="flex-1 px-4 py-5">{navItems}</div>
-    </aside>
+      <SidebarHeader className="gap-3 border-b border-(--line) bg-(--surface) px-4 py-5">
+        <div className="px-3">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-(--kicker)">
+            Workspace
+          </p>
+          <h1 className="mt-2 font-heading text-xl font-semibold tracking-[0.08em] text-slate-950 dark:text-slate-100">
+            User Name
+          </h1>
+          <p className="mt-2 text-xs leading-6 text-(--sea-ink-soft) group-data-[collapsible=icon]:hidden">
+            Manage projects, review activity, and update workspace settings.
+          </p>
+        </div>
+      </SidebarHeader>
+
+      <SidebarContent className="bg-(--surface) px-2 py-4">
+        <SidebarGroup>
+          <SidebarGroupLabel className="px-3 text-(--sea-ink-soft)">Navigation</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu className="gap-2">
+              {routes.map(({ name, path, icon: Icon }) => {
+                const isActive = isRouteActive(path);
+
+                return (
+                  <SidebarMenuItem key={path}>
+                    <SidebarMenuButton asChild className="justify-start h-14">
+                      <Link
+                        to={path}
+                        className={buttonVariants({ variant: isActive ? 'default' : 'ghost' })}
+                      >
+                        <Icon className={'size-4 text-black dark:text-white'} />
+                        <span className={'text-black dark:text-white'}>{name}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarSeparator className="bg-(--line)" />
+    </Sidebar>
   );
 };
+
 export default DashboardSideBar;
