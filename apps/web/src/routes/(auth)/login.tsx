@@ -23,6 +23,13 @@ import { LAST_AUTHENTICATED_METHOD, SESSION_TOKEN_KEY } from '#/constants';
 import GoogleButton from '#/components/auth/GoogleButton.tsx';
 import AuthLastBadge from '#/components/auth/AuthLastBadge.tsx';
 import type { LastAuthenticatedMethodType } from '#/types';
+import type { ApiSuccessResponse } from '#/types/api.ts';
+
+type LoginResponse = ApiSuccessResponse<{
+  session: {
+    token: string;
+  };
+}>;
 
 export const Route = createFileRoute('/(auth)/login')({
   component: LogInComponent,
@@ -60,9 +67,9 @@ function LogInComponent() {
         setShowAlert(true);
         setErrorMessage(error.message ?? 'Something went wrong. Please try again later.');
       },
-      onSuccess: async (response) => {
+      onSuccess: async (response: LoginResponse) => {
         console.log('login response:', response);
-        setItemToLocalStorage<string>(SESSION_TOKEN_KEY, response.session.token);
+        setItemToLocalStorage<string>(SESSION_TOKEN_KEY, response.data.session.token);
         setItemToLocalStorage<LastAuthenticatedMethodType>(LAST_AUTHENTICATED_METHOD, 'credential');
         await navigate({
           to: '/dashboard',

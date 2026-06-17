@@ -3,7 +3,7 @@ import * as React from 'react';
 import LogOutButton from '#/components/auth/LogOutButton.tsx';
 import { cn } from '#/lib/utils.ts';
 import { useQuery } from '@tanstack/react-query';
-import { getMeServerFn } from '#/server-fns/auth';
+import api from '#/lib/axios.ts';
 
 export const Route = createFileRoute('/dashboard/settings/')({
   component: RouteComponent,
@@ -11,9 +11,12 @@ export const Route = createFileRoute('/dashboard/settings/')({
 
 function RouteComponent() {
   // getting personal info from server
-  const {data, isPending, isError, error} = useQuery({
+  const { data, isPending, isError, error } = useQuery({
     queryKey: ['personal-info'],
-    queryFn: async () => getMeServerFn(),
+    queryFn: async () => {
+      const response = await api.get('/auth/me');
+      return response.data;
+    },
   });
 
   return (
@@ -22,11 +25,7 @@ function RouteComponent() {
       <SectionWrapper title={'Personal Info'}>
         {isPending && <p>Loading...</p>}
         {isError && <p>Error: {error.message}</p>}
-        {data && (
-          <div className={'flex flex-col gap-3'}>
-            {data}
-          </div>
-        )}
+        {data && <div className={'flex flex-col gap-3'}>{JSON.stringify(data)}</div>}
       </SectionWrapper>
 
       {/*  Logout button*/}

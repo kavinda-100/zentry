@@ -1,18 +1,21 @@
 import { Button } from '#/components/ui/button.tsx';
 import { LiaSignOutAltSolid } from 'react-icons/lia';
 import { useMutation } from '@tanstack/react-query';
-import { logoutServerFn } from '#/server-fns/auth';
 import { useNavigate } from '@tanstack/react-router';
 import { Loader2Icon } from 'lucide-react';
 import { useLocalStorage } from '#/hooks/useLocalStorage.ts';
 import { SESSION_TOKEN_KEY } from '#/constants';
+import api from '#/lib/axios.ts';
 
 const LogOutButton = () => {
   const { removeItemFromLocalStorage } = useLocalStorage();
   const navigate = useNavigate();
 
   const { isPending, mutate } = useMutation({
-    mutationFn: async () => logoutServerFn(),
+    mutationFn: async () => {
+      const response = await api.post('/auth/logout');
+      return response.data;
+    },
   });
 
   const handleLogOut = () => {
@@ -32,6 +35,7 @@ const LogOutButton = () => {
 
   return (
     <Button
+      type="button"
       className={'w-full cursor-pointer'}
       variant="outline"
       onClick={handleLogOut}

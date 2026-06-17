@@ -206,7 +206,14 @@ export const googleOauthCallback = async (req: Request, res: Response, next: Nex
         token: sessionToken,
       },
     };
-    OKResponse(res, StatusCodes.CREATED, 'Authenticated successfully', resBody);
+
+    logger.info('Google OAuth completed successfully. Redirecting back to web app.');
+    OKResponse(
+      res,
+      StatusCodes.OK,
+      'Google OAuth completed successfully. Redirecting back to web app.',
+      resBody,
+    );
   } catch (e) {
     next(e);
   }

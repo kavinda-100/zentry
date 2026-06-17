@@ -1,15 +1,12 @@
 import { Button } from '#/components/ui/button.tsx';
 import { FcGoogle } from 'react-icons/fc';
 import { cn } from '#/lib/utils.ts';
-import { useMutation } from '@tanstack/react-query';
-import { Loader2Icon } from 'lucide-react';
-import { registerWithGoogleServerFn } from '#/server-fns/auth';
 import type { Dispatch, SetStateAction } from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { LAST_AUTHENTICATED_METHOD, SESSION_TOKEN_KEY } from '#/constants';
+import { LAST_AUTHENTICATED_METHOD } from '#/constants';
 import { useLocalStorage } from '#/hooks/useLocalStorage.ts';
 import type { LastAuthenticatedMethodType } from '#/types';
 import AuthLastBadge from '#/components/auth/AuthLastBadge.tsx';
+import { env } from '#/lib/env.ts';
 
 type GoogleButtonProps = {
   classnames?: string;
@@ -18,34 +15,16 @@ type GoogleButtonProps = {
 };
 
 const GoogleButton = ({ classnames, setShowAlert, setErrorMessage }: GoogleButtonProps) => {
-  const navigate = useNavigate();
   const { setItemToLocalStorage, getItemFromLocalStorage } = useLocalStorage();
   const lastAuthenticatedMethod =
     getItemFromLocalStorage<LastAuthenticatedMethodType>(LAST_AUTHENTICATED_METHOD);
 
-  const { mutate, isPending } = useMutation({
-    mutationFn: async () => registerWithGoogleServerFn(),
-  });
-
   const handleGoogleLogin = () => {
     setShowAlert(false);
     setErrorMessage(null);
+    setItemToLocalStorage<LastAuthenticatedMethodType>(LAST_AUTHENTICATED_METHOD, 'google');
 
-    mutate(undefined, {
-      onError: (error) => {
-        console.error('Google login error:', error);
-        setShowAlert(true);
-        setErrorMessage(error.message ?? 'Google login failed. Please try again later.');
-      },
-      onSuccess: async (response) => {
-        console.log('Google login successful');
-        setItemToLocalStorage<string>(SESSION_TOKEN_KEY, response.session.token);
-        setItemToLocalStorage<LastAuthenticatedMethodType>(LAST_AUTHENTICATED_METHOD, 'google');
-        await navigate({
-          to: '/dashboard',
-        });
-      },
-    });
+    window.location.assign(new URL(`${env.VITE_API_URL}/auth/providers/google`).toString());
   };
 
   return (
@@ -54,13 +33,13 @@ const GoogleButton = ({ classnames, setShowAlert, setErrorMessage }: GoogleButto
       <div className="relative">
         {lastAuthenticatedMethod === 'google' ? <AuthLastBadge /> : null}
         <Button
+          type="button"
           className="w-full cursor-pointer"
           variant="outline"
-          disabled={isPending}
           onClick={handleGoogleLogin}
         >
           <FcGoogle className="h-5 w-5" />
-          {isPending ? <Loader2Icon className="size-4 animate-spin" /> : 'Continue with Google'}
+          Continue with Google
         </Button>
       </div>
     </div>

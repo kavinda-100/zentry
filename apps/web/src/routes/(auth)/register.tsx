@@ -24,6 +24,13 @@ import { LAST_AUTHENTICATED_METHOD, SESSION_TOKEN_KEY } from '#/constants';
 import GoogleButton from '#/components/auth/GoogleButton.tsx';
 import AuthLastBadge from '#/components/auth/AuthLastBadge.tsx';
 import type { LastAuthenticatedMethodType } from '#/types';
+import type { ApiSuccessResponse } from '#/types/api.ts';
+
+type RegisterResponse = ApiSuccessResponse<{
+  session: {
+    token: string;
+  };
+}>;
 
 export const Route = createFileRoute('/(auth)/register')({
   component: RegisterComponent,
@@ -65,9 +72,9 @@ function RegisterComponent() {
         setShowAlert(true);
         setErrorMessage(error.message ?? 'Something went wrong. Please try again later.');
       },
-      onSuccess: async (response, variables) => {
+      onSuccess: async (response: RegisterResponse, variables) => {
         console.log('register response:', response);
-        setItemToLocalStorage<string>(SESSION_TOKEN_KEY, response.session.token);
+        setItemToLocalStorage<string>(SESSION_TOKEN_KEY, response.data.session.token);
         setItemToLocalStorage<LastAuthenticatedMethodType>(LAST_AUTHENTICATED_METHOD, 'credential');
         await navigate({
           to: '/verify-email',

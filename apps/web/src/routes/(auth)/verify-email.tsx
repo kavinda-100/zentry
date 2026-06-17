@@ -16,9 +16,9 @@ import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field
 import { Input } from '@/components/ui/input';
 import { useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { verifyEmailServerFn } from '#/server-fns/auth';
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CircleAlert, Loader2, X } from 'lucide-react';
+import api from '#/lib/axios.ts';
 
 export const Route = createFileRoute('/(auth)/verify-email')({
   validateSearch: z.object({
@@ -35,7 +35,10 @@ function VerifyEmailComponent() {
 
   // register mutation
   const { mutate, isPending } = useMutation({
-    mutationFn: async (data: VerifyEmailSchemaType) => verifyEmailServerFn({ data }),
+    mutationFn: async (data: VerifyEmailSchemaType) => {
+      const response = await api.post('/auth/verify-email', data);
+      return response.data;
+    },
   });
 
   const formId = 'verify-email-form';
