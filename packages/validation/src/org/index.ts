@@ -3,6 +3,8 @@ import { z } from 'zod';
 export const createOrgSchema = z.object({
   name: z.string().min(1, { message: 'Organization name is required.' }),
   logoUrl: z.url().optional(),
+  appHomeUrls: z.array(z.url()).optional(),
+  appCallbackUrls: z.array(z.url()).optional(),
 });
 
 export const updateOrgSchema = createOrgSchema.partial();

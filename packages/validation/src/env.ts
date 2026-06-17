@@ -34,6 +34,9 @@ export const ApiEnvSchema = z.object({
   GOOGLE_REDIRECT_URI: z.string({
     error: 'GOOGLE_REDIRECT_URI is required for Google OAuth authentication.',
   }),
+  WEB_URL: z.url({
+    error: 'WEB_URL is required so OAuth callbacks can redirect users back to the web app.',
+  }),
 });
 
 export const WorkerEnvSchema = z.object({

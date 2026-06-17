@@ -12,7 +12,7 @@ export const googleOAuth2Client = new OAuth2Client(
 /**
  * Generates a secure Google Consent Screen URL for the frontend redirection boundary.
  */
-export const getGoogleAuthUrl = (): string => {
+export const getGoogleAuthUrl = (state?: string): string => {
   return googleOAuth2Client.generateAuthUrl({
     access_type: 'offline', // Requests a refresh_token for extended backend sessions
     // scope: [
@@ -21,6 +21,7 @@ export const getGoogleAuthUrl = (): string => {
     // ],
     scope: ['openid', 'email', 'profile'],
     prompt: 'consent',
+    state,
   });
 };
 

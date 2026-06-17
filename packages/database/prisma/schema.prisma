@@ -55,17 +55,22 @@ model User {
 
 // Organizations Matrix
 model Organization {
-  id          String       @id @default(uuid())
-  name        String
-  rootAdminId String
-  user        User         @relation(fields: [rootAdminId], references: [id])
-  logoUrl     String?
-  memberships Membership[] // List of all members in this organization
+  id             String       @id @default(uuid())
+  name           String
+  rootAdminId    String
+  user           User         @relation(fields: [rootAdminId], references: [id])
+  logoUrl        String?
+  apiKeyRow      String       @unique // Unique API key for this organization (can be used for API authentication or as a public identifier)
+  apiKeyHash     String       @unique // Unique API key for this organization (can be used for API authentication or as a public identifier)
+  apiKeyPrefix   String       @unique // Unique API key prefix for this organization (can be used for API authentication or as a public identifier)
+  appHomeUrl     String[] // Optional URL for the organization's app home page or (dashboard)
+  appCallbackUrl String[] // Optional URL for OAuth callbacks or redirects
+  memberships    Membership[] // List of all members in this organization
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([rootAdminId])
+  @@index([rootAdminId, apiKeyHash])
 }
 
 // Membership Junction (Role-Based Access Control + Context per Tenant)

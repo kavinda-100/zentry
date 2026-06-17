@@ -14,9 +14,11 @@ import { createAuthSessionInTheRedis } from '../../../lib/redis/auth.redis';
  * @description This function is used to redirect the user to the Google consent page for OAuth authentication.
  * only for standard users (not for organization users)
  * */
-export const googleOauth = async (_req: Request, res: Response, next: NextFunction) => {
+export const googleOauth = async (req: Request, res: Response, next: NextFunction) => {
   try {
     logger.info('Google Oauth route hit');
+    const { callbackurl } = req.params;
+    console.log('callbackurl', callbackurl);
 
     // get the Google consent page url
     const url = getGoogleAuthUrl();
@@ -206,7 +208,14 @@ export const googleOauthCallback = async (req: Request, res: Response, next: Nex
         token: sessionToken,
       },
     };
-    OKResponse(res, StatusCodes.CREATED, 'Authenticated successfully', resBody);
+
+    logger.info('Google OAuth completed successfully. Redirecting back to web app.');
+    OKResponse(
+      res,
+      StatusCodes.OK,
+      'Google OAuth completed successfully. Redirecting back to web app.',
+      resBody,
+    );
   } catch (e) {
     next(e);
   }
