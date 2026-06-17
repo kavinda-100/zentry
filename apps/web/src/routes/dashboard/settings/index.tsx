@@ -2,8 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import * as React from 'react';
 import LogOutButton from '#/components/auth/LogOutButton.tsx';
 import { cn } from '#/lib/utils.ts';
-import { useQuery } from '@tanstack/react-query';
-import api from '#/lib/axios.ts';
+import { useGetMe } from '#/hooks/auth/useGetMe.ts';
 
 export const Route = createFileRoute('/dashboard/settings/')({
   component: RouteComponent,
@@ -11,21 +10,15 @@ export const Route = createFileRoute('/dashboard/settings/')({
 
 function RouteComponent() {
   // getting personal info from server
-  const { data, isPending, isError, error } = useQuery({
-    queryKey: ['personal-info'],
-    queryFn: async () => {
-      const response = await api.get('/auth/me');
-      return response.data;
-    },
-  });
+  const { data, isPending, isError, error } = useGetMe();
 
   return (
     <section className={'flex flex-col w-full gap-3'}>
       {/*  personal info and account settings/update button*/}
       <SectionWrapper title={'Personal Info'}>
         {isPending && <p>Loading...</p>}
-        {isError && <p>Error: {error.message}</p>}
-        {data && <div className={'flex flex-col gap-3'}>{JSON.stringify(data)}</div>}
+        {isError && <p>{error?.message}</p>}
+        {data && <div className={'flex flex-col gap-3'}>{JSON.stringify(data.data)}</div>}
       </SectionWrapper>
 
       {/*  Logout button*/}

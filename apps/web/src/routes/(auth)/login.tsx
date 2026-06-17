@@ -14,8 +14,6 @@ import {
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { useMutation } from '@tanstack/react-query';
-import { loginServerFn } from '#/server-fns/auth';
 import { CircleAlert, Loader2, X } from 'lucide-react';
 import { useLocalStorage } from '#/hooks/useLocalStorage.ts';
 import { useState } from 'react';
@@ -23,13 +21,7 @@ import { LAST_AUTHENTICATED_METHOD, SESSION_TOKEN_KEY } from '#/constants';
 import GoogleButton from '#/components/auth/GoogleButton.tsx';
 import AuthLastBadge from '#/components/auth/AuthLastBadge.tsx';
 import type { LastAuthenticatedMethodType } from '#/types';
-import type { ApiSuccessResponse } from '#/types/api.ts';
-
-type LoginResponse = ApiSuccessResponse<{
-  session: {
-    token: string;
-  };
-}>;
+import { useLogIn } from '#/hooks/auth/useLogIn.ts';
 
 export const Route = createFileRoute('/(auth)/login')({
   component: LogInComponent,
@@ -39,14 +31,11 @@ function LogInComponent() {
   const [showAlert, setShowAlert] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const { isPending, mutate } = useLogIn();
   const navigate = useNavigate();
   const { setItemToLocalStorage, getItemFromLocalStorage } = useLocalStorage();
   const lastAuthenticatedMethod =
     getItemFromLocalStorage<LastAuthenticatedMethodType>(LAST_AUTHENTICATED_METHOD);
-
-  const { mutate, isPending } = useMutation({
-    mutationFn: async (data: LoginSchemaType) => loginServerFn({ data }),
-  });
 
   const formId = 'login-form';
   const form = useForm<LoginSchemaType>({
@@ -67,7 +56,7 @@ function LogInComponent() {
         setShowAlert(true);
         setErrorMessage(error.message ?? 'Something went wrong. Please try again later.');
       },
-      onSuccess: async (response: LoginResponse) => {
+      onSuccess: async (response) => {
         console.log('login response:', response);
         setItemToLocalStorage<string>(SESSION_TOKEN_KEY, response.data.session.token);
         setItemToLocalStorage<LastAuthenticatedMethodType>(LAST_AUTHENTICATED_METHOD, 'credential');

@@ -14,8 +14,6 @@ import {
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { faker } from '@faker-js/faker';
-import { useMutation } from '@tanstack/react-query';
-import { registerServerFn } from '#/server-fns/auth';
 import { CircleAlert, Loader2, X } from 'lucide-react';
 import { useLocalStorage } from '#/hooks/useLocalStorage.ts';
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -24,13 +22,7 @@ import { LAST_AUTHENTICATED_METHOD, SESSION_TOKEN_KEY } from '#/constants';
 import GoogleButton from '#/components/auth/GoogleButton.tsx';
 import AuthLastBadge from '#/components/auth/AuthLastBadge.tsx';
 import type { LastAuthenticatedMethodType } from '#/types';
-import type { ApiSuccessResponse } from '#/types/api.ts';
-
-type RegisterResponse = ApiSuccessResponse<{
-  session: {
-    token: string;
-  };
-}>;
+import { useRegister } from '#/hooks/auth/useRegister.ts';
 
 export const Route = createFileRoute('/(auth)/register')({
   component: RegisterComponent,
@@ -40,15 +32,11 @@ function RegisterComponent() {
   const [showAlert, setShowAlert] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const { isPending, mutate } = useRegister();
   const navigate = useNavigate();
   const { setItemToLocalStorage, getItemFromLocalStorage } = useLocalStorage();
   const lastAuthenticatedMethod =
     getItemFromLocalStorage<LastAuthenticatedMethodType>(LAST_AUTHENTICATED_METHOD);
-
-  // register mutation
-  const { mutate, isPending } = useMutation({
-    mutationFn: async (data: RegisterSchemaType) => registerServerFn({ data }),
-  });
 
   const formId = 'register-form';
   const form = useForm<RegisterSchemaType>({
@@ -72,7 +60,7 @@ function RegisterComponent() {
         setShowAlert(true);
         setErrorMessage(error.message ?? 'Something went wrong. Please try again later.');
       },
-      onSuccess: async (response: RegisterResponse, variables) => {
+      onSuccess: async (response, variables) => {
         console.log('register response:', response);
         setItemToLocalStorage<string>(SESSION_TOKEN_KEY, response.data.session.token);
         setItemToLocalStorage<LastAuthenticatedMethodType>(LAST_AUTHENTICATED_METHOD, 'credential');
