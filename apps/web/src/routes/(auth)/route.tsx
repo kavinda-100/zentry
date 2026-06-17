@@ -1,14 +1,14 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router';
 
-export const Route = createFileRoute('/(about)/about')({
+export const Route = createFileRoute('/(auth)')({
   component: RouteComponent,
 });
 
+// Auth Layout
 function RouteComponent() {
   return (
-    <div>
-      from about layout
+    <section className="flex h-screen w-full items-center justify-center">
       <Outlet />
-    </div>
+    </section>
   );
 }
