@@ -22,6 +22,7 @@ import { useLocalStorage } from '#/hooks/useLocalStorage.ts';
 import { useState } from 'react';
 import { LAST_AUTHENTICATED_METHOD, SESSION_TOKEN_KEY } from '#/constants';
 import GoogleButton from '#/components/auth/GoogleButton.tsx';
+import AuthLastBadge from '#/components/auth/AuthLastBadge.tsx';
 import type { LastAuthenticatedMethodType } from '#/types';
 
 export const Route = createFileRoute('/(auth)/login')({
@@ -33,7 +34,9 @@ function LogInComponent() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const navigate = useNavigate();
-  const { setItemToLocalStorage } = useLocalStorage();
+  const { setItemToLocalStorage, getItemFromLocalStorage } = useLocalStorage();
+  const lastAuthenticatedMethod =
+    getItemFromLocalStorage<LastAuthenticatedMethodType>(LAST_AUTHENTICATED_METHOD);
 
   const { mutate, isPending } = useMutation({
     mutationFn: async (data: LoginSchemaType) => loginServerFn({ data }),
@@ -157,9 +160,12 @@ function LogInComponent() {
             >
               Reset
             </Button>
-            <Button type="submit" form={formId} className="min-w-32" disabled={isPending}>
-              {isPending ? <Loader2 className="size-4 animate-spin" /> : 'Sign in'}
-            </Button>
+            <div className="relative">
+              {lastAuthenticatedMethod === 'credential' ? <AuthLastBadge /> : null}
+              <Button type="submit" form={formId} className="min-w-32" disabled={isPending}>
+                {isPending ? <Loader2 className="size-4 animate-spin" /> : 'Sign in'}
+              </Button>
+            </div>
           </Field>
 
           {/*  google button*/}

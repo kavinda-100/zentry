@@ -3,7 +3,7 @@ import { FcGoogle } from 'react-icons/fc';
 import { cn } from '#/lib/utils.ts';
 import { useMutation } from '@tanstack/react-query';
 import { Loader2Icon } from 'lucide-react';
-import { getMeServerFn } from '#/server-fns/auth';
+import { registerWithGoogleServerFn } from '#/server-fns/auth';
 import type { Dispatch, SetStateAction } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { LAST_AUTHENTICATED_METHOD, SESSION_TOKEN_KEY } from '#/constants';
@@ -24,7 +24,7 @@ const GoogleButton = ({ classnames, setShowAlert, setErrorMessage }: GoogleButto
     getItemFromLocalStorage<LastAuthenticatedMethodType>(LAST_AUTHENTICATED_METHOD);
 
   const { mutate, isPending } = useMutation({
-    mutationFn: async () => getMeServerFn(),
+    mutationFn: async () => registerWithGoogleServerFn(),
   });
 
   const handleGoogleLogin = () => {

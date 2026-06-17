@@ -23,6 +23,7 @@ import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/u
 import { useState } from 'react';
 import { LAST_AUTHENTICATED_METHOD, SESSION_TOKEN_KEY } from '#/constants';
 import GoogleButton from '#/components/auth/GoogleButton.tsx';
+import AuthLastBadge from '#/components/auth/AuthLastBadge.tsx';
 import type { LastAuthenticatedMethodType } from '#/types';
 
 export const Route = createFileRoute('/(auth)/register')({
@@ -34,7 +35,9 @@ function RegisterComponent() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const navigate = useNavigate();
-  const { setItemToLocalStorage } = useLocalStorage();
+  const { setItemToLocalStorage, getItemFromLocalStorage } = useLocalStorage();
+  const lastAuthenticatedMethod =
+    getItemFromLocalStorage<LastAuthenticatedMethodType>(LAST_AUTHENTICATED_METHOD);
 
   // register mutation
   const { mutate, isPending } = useMutation({
@@ -223,9 +226,12 @@ function RegisterComponent() {
             >
               Reset
             </Button>
-            <Button type="submit" form={formId} className="min-w-32" disabled={isPending}>
-              {isPending ? <Loader2 className={'size-4 animate-spin'} /> : 'Create account'}
-            </Button>
+            <div className="relative">
+              {lastAuthenticatedMethod === 'credential' ? <AuthLastBadge /> : null}
+              <Button type="submit" form={formId} className="min-w-32" disabled={isPending}>
+                {isPending ? <Loader2 className={'size-4 animate-spin'} /> : 'Create account'}
+              </Button>
+            </div>
           </Field>
 
           {/*  google button*/}
