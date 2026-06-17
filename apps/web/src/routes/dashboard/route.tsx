@@ -8,12 +8,12 @@ export const Route = createFileRoute('/dashboard')({
 // Dashboard Layout
 function RouteComponent() {
   return (
-    <section className={'w-full min-h-screen flex'}>
+    <section className="flex min-h-screen w-full flex-col md:flex-row">
       {/*  sidebar*/}
       <DashboardSideBar />
 
       {/*  content*/}
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         <Outlet />
       </div>
     </section>
