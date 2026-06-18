@@ -6,6 +6,8 @@ export const orgCreateResponseSchema = organizationSchema.omit({
   apiKeyPrefix: true,
 });
 
+export const orgUpdateResponseSchema = organizationSchema;
+
 export const orgGetAllResponseSchema = z.array(organizationSchema);
 
 export const orgMembershipSchema = membershipSchema.extend({
