@@ -1,6 +1,17 @@
-import { createFileRoute, Outlet } from '@tanstack/react-router';
+import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
+import { getIsAuthenticated } from '#/hooks/auth/authentication.ts';
 
 export const Route = createFileRoute('/(auth)')({
+  beforeLoad: async ({ context }) => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const isAuthenticated = await getIsAuthenticated(context.queryClient);
+    if (isAuthenticated) {
+      throw redirect({ to: '/dashboard' });
+    }
+  },
   component: RouteComponent,
 });
 

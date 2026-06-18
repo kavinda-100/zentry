@@ -2,7 +2,13 @@ import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { standardRateLimiter, strictRateLimiter } from '../middleware/rateLimiter';
 import { requireAuthenticatedSession } from '../middleware/requireAuthenticatedSession';
-import { register, login, logout, getMe } from '../controllers/auth/standard/index.controller';
+import {
+  register,
+  login,
+  logout,
+  getMe,
+  checkIsAuthenticated,
+} from '../controllers/auth/standard/index.controller';
 import { verifyEmail } from '../controllers/auth/standard/verify.email.controller';
 import {
   googleOauth,
@@ -22,6 +28,13 @@ router.post('/logout', strictRateLimiter, requireAuthenticatedSession, logout);
 router.post('/verify-email', strictRateLimiter, requireAuthenticatedSession, verifyEmail);
 // GET https://localhost:5000/api/v1/auth/me
 router.get('/me', standardRateLimiter, requireAuthenticatedSession, getMe);
+// GET https://localhost:5000/api/v1/auth/is-authenticated
+router.get(
+  '/is-authenticated',
+  standardRateLimiter,
+  requireAuthenticatedSession,
+  checkIsAuthenticated,
+);
 // GET https://localhost:5000/api/v1/auth/providers
 router.get('/providers', standardRateLimiter, (_req: Request, res: Response) => {
   res.status(200).json({ providers: ['credential', 'google'] });

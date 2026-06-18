@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet } from '@tanstack/react-router';
+import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 import DashboardSideBar from '#/components/dashboard/DashboardSideBar.tsx';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar.tsx';
 import * as React from 'react';
@@ -7,18 +7,33 @@ import { useEffect } from 'react';
 import { z } from 'zod';
 import { useLocalStorage } from '#/hooks/useLocalStorage.ts';
 import { SESSION_TOKEN_KEY } from '#/constants';
+import { getIsAuthenticated, storeSessionToken } from '#/hooks/auth/authentication.ts';
 
 export const Route = createFileRoute('/dashboard')({
   validateSearch: z.object({
     token: z.string().optional(),
   }),
+  beforeLoad: async ({ context, search }) => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (search.token) {
+      storeSessionToken(search.token);
+    }
+
+    const isAuthenticated = await getIsAuthenticated(context.queryClient);
+    if (!isAuthenticated) {
+      throw redirect({ to: '/login' });
+    }
+  },
   component: RouteComponent,
 });
 
 // Dashboard Layout
 function RouteComponent() {
-  const { setItemToLocalStorage } = useLocalStorage();
   const { token } = Route.useSearch();
+  const { setItemToLocalStorage } = useLocalStorage();
 
   // set token to local storage
   // this is for the case when user is redirected from Google login
@@ -29,7 +44,6 @@ function RouteComponent() {
 
     setItemToLocalStorage<string>(SESSION_TOKEN_KEY, token);
   }, [setItemToLocalStorage, token]);
-
 
   return (
     <SidebarProvider

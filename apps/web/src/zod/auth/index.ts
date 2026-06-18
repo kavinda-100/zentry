@@ -7,6 +7,10 @@ export const authSessionDataSchema = z.object({
   }),
 });
 
+export const isAuthenticatedSchema = z.object({
+  isAuthenticated: z.boolean(),
+});
+
 export const meUserDataSchema = userSchema.extend({
   accounts: z.array(accountSchema),
   organizations: z.array(organizationSchema),
