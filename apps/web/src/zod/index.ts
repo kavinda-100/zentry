@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+export const isoDateStringSchema = z.string().min(1);
+
 const responseBaseSchema = {
   status_code: z.number().int().nonnegative(),
   message: z.string(),

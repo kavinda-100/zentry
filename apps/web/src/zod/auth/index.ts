@@ -1,10 +1,10 @@
 import { z } from 'zod';
+import { isoDateStringSchema } from '#/zod';
 
 const authProviderSchema = z.enum(['LOCAL', 'GOOGLE']);
 const providerTypeSchema = z.enum(['CREDENTIAL', 'OAUTH']);
 const roleSchema = z.enum(['ADMIN', 'MEMBER']);
 const jsonValueSchema = z.unknown();
-const isoDateStringSchema = z.string().min(1);
 
 export const authSessionDataSchema = z.object({
   session: z.object({

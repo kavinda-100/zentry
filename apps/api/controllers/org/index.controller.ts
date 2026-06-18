@@ -72,6 +72,9 @@ export const createOrganization = async (req: Request, res: Response, next: Next
           apiKeyHash: true,
           appHomeUrl: true,
           appCallbackUrl: true,
+          rootAdminId: true,
+          createdAt: true,
+          updatedAt: true,
         },
       });
 
