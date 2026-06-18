@@ -60,12 +60,14 @@ function MembershipRowActions({ row }: { row: MembershipTableRow }) {
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          disabled
           className="cursor-pointer"
           onClick={() =>
             navigate({
-              to: '/dashboard/projects/$projectId',
-              params: { projectId: row.userId },
+              to: '/dashboard/projects/$projectId/member/$memberId',
+              params: {
+                projectId: row.organizationId,
+                memberId: row.userId,
+              },
             })
           }
         >

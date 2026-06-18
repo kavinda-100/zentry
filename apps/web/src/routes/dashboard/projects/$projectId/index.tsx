@@ -25,6 +25,7 @@ function RouteComponent() {
       role: membership.role,
       isBanned: membership.isBanned,
       userId: membership.userId,
+      organizationId: membership.organizationId,
       createdAt: membership.createdAt,
       userImageUrl: membership.user.imageUrl,
     })),

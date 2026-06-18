@@ -19,6 +19,7 @@ export const orgMembershipTableRowSchema = z.object({
   role: membershipSchema.shape.role,
   isBanned: membershipSchema.shape.isBanned,
   userId: membershipSchema.shape.userId,
+  organizationId: membershipSchema.shape.organizationId,
   createdAt: membershipSchema.shape.createdAt,
   userImageUrl: userSchema.shape.imageUrl,
 });
