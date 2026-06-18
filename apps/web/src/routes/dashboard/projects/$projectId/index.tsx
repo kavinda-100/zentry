@@ -1,4 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { SectionWrapper } from '#/components/dashboard/SectionWrapper.tsx';
+import {
+  ProjectOverview,
+  ProjectOverviewError,
+} from '#/components/dashboard/projects/ProjectOverview.tsx';
 import { useGetOrgById } from '#/hooks/org/useGetOrgById.ts';
 
 export const Route = createFileRoute('/dashboard/projects/$projectId/')({
@@ -7,10 +12,19 @@ export const Route = createFileRoute('/dashboard/projects/$projectId/')({
 
 function RouteComponent() {
   const { projectId } = Route.useParams();
-  const {data, isPending, isError, error} = useGetOrgById(projectId);
+  const { data, isPending, isError, error } = useGetOrgById(projectId);
 
-  console.log(data);
-  if(isPending) return <div>Loading...</div>;
-  if(isError) return <div>Error: {error?.message}</div>;
-  return <div>Hello "/dashboard/projects/$projectId/"! = {JSON.stringify(data, null, 2)}</div>;
+  return (
+    <section className="flex w-full flex-col gap-10 px-4 py-6 md:px-6 md:py-8">
+      <SectionWrapper header="Project Docs" title="Organization Details">
+        {isError ? (
+          <ProjectOverviewError
+            message={error?.message ?? 'Something went wrong while loading organization details.'}
+          />
+        ) : (
+          <ProjectOverview data={data?.data} isPending={isPending} />
+        )}
+      </SectionWrapper>
+    </section>
+  );
 }
