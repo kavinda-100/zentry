@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import api from '#/lib/axios.ts';
 import { type CreateOrgSchemaType } from '@zentry/validation';
 import { createOkResponseSchema } from '#/zod';
-import { orgResponseSchema } from '#/zod/org';
+import { orgCreateResponseSchema } from '#/zod/org';
 
 export function useCreateOrg() {
   const { mutate, isPending } = useMutation({
@@ -11,7 +11,7 @@ export function useCreateOrg() {
       console.log(response.data);
 
       // validate the response
-      const validator = createOkResponseSchema(orgResponseSchema);
+      const validator = createOkResponseSchema(orgCreateResponseSchema);
       const validatedData = validator.safeParse(response.data);
       if (!validatedData.success) {
         console.error('Invalid response from server:', validatedData.error.issues);

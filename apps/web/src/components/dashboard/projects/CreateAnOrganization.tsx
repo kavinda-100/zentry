@@ -18,6 +18,7 @@ import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useCreateOrg } from '#/hooks/org/useCreateOrg.ts';
+import { useQueryClient } from '@tanstack/react-query';
 
 const urlInputSchema = z.union([z.literal(''), z.url()]);
 
@@ -43,6 +44,7 @@ const CreateAnOrganization = () => {
   const [open, setOpen] = useState(false);
 
   const { isPending, mutate } = useCreateOrg();
+  const queryClient = useQueryClient();
   const formId = 'create-org-form';
   const form = useForm<CreateOrgFormValues>({
     resolver: standardSchemaResolver(createOrgFormSchema),
@@ -104,6 +106,8 @@ const CreateAnOrganization = () => {
       onSuccess: async () => {
         resetForm();
         setOpen(false);
+        // Invalidate the user or's query to fetch the updated list
+        await queryClient.invalidateQueries({ queryKey: ['user-orgs'] });
       },
     });
   }

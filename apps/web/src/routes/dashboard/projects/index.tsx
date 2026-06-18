@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { SectionWrapper } from '#/components/dashboard/SectionWrapper.tsx';
 import CreateAnOrganization from '#/components/dashboard/projects/CreateAnOrganization.tsx';
+import AllUserProjects from '#/components/dashboard/projects/AllUserProjects.tsx';
 
 export const Route = createFileRoute('/dashboard/projects/')({
   component: RouteComponent,
@@ -15,6 +16,7 @@ function RouteComponent() {
       </SectionWrapper>
 
       {/*  All Projects/apps user created*/}
+      <AllUserProjects />
     </section>
   );
 }

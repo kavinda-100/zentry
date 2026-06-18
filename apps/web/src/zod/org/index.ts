@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { isoDateStringSchema } from '#/zod';
 
-export const orgResponseSchema = z.object({
+export const orgCreateResponseSchema = z.object({
   id: z.uuid(),
   name: z.string(),
   rootAdminId: z.uuid(),
@@ -12,3 +12,10 @@ export const orgResponseSchema = z.object({
   createdAt: isoDateStringSchema,
   updatedAt: isoDateStringSchema,
 });
+
+export const orgGetAllResponseSchema = z.array(
+  orgCreateResponseSchema.extend({
+    apiKeyRow: z.string(),
+    apiKeyPrefix: z.string(),
+  }),
+);
