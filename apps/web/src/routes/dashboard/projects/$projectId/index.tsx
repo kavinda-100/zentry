@@ -7,6 +7,7 @@ import {
 import { useGetOrgById } from '#/hooks/org/useGetOrgById.ts';
 import { Button } from '#/components/ui/button.tsx';
 import GoBack from '#/components/dashboard/GoBack.tsx';
+import DeleteOrg from '#/components/dashboard/projects/DeleteOrg.tsx';
 
 export const Route = createFileRoute('/dashboard/projects/$projectId/')({
   component: RouteComponent,
@@ -48,7 +49,7 @@ function RouteComponent() {
           <Button onClick={handleClick} className={'cursor-pointer'}>
             Edit
           </Button>
-          <Button variant="destructive">Delete</Button>
+          <DeleteOrg orgId={projectId} />
         </div>
       </SectionWrapper>
     </section>
