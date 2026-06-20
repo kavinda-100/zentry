@@ -8,6 +8,7 @@ import {
 } from '../controllers/org/index.controller';
 import { standardRateLimiter } from '../middleware/rateLimiter';
 import { requireAuthenticatedSession } from '../middleware/requireAuthenticatedSession';
+import { getMemberDetails, updateMemberRole } from '../controllers/org/members.controller';
 
 const router = Router();
 
@@ -21,5 +22,21 @@ router.patch('/:id', standardRateLimiter, requireAuthenticatedSession, updateOrg
 router.delete('/:id', standardRateLimiter, requireAuthenticatedSession, deleteOrganization);
 // GET https://localhost:5000/api/v1/org/:id
 router.get('/:id', standardRateLimiter, requireAuthenticatedSession, getOrganizationById);
+
+// for member-related routes,
+// GET https://localhost:5000/api/v1/org/members/:memberId/:organizationId
+router.get(
+  '/members/:memberId/:organizationId',
+  standardRateLimiter,
+  requireAuthenticatedSession,
+  getMemberDetails,
+);
+// PATCH https://localhost:5000/api/v1/org/members/:memberId/:organizationId
+router.patch(
+  '/members/:memberId/:organizationId',
+  standardRateLimiter,
+  requireAuthenticatedSession,
+  updateMemberRole,
+);
 
 export default router;
