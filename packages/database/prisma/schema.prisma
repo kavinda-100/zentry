@@ -153,6 +153,7 @@ model Session {
 
   @@index([token])
   @@index([userId])
+  @@index([userId, organizationId])
 }
 
 model OtpCode {
