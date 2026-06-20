@@ -72,6 +72,9 @@ export const createOrganization = async (req: Request, res: Response, next: Next
           apiKeyHash: true,
           appHomeUrl: true,
           appCallbackUrl: true,
+          rootAdminId: true,
+          createdAt: true,
+          updatedAt: true,
         },
       });
 
@@ -266,9 +269,16 @@ export const deleteOrganization = async (req: Request, res: Response, next: Next
       );
     }
 
-    // delete the organization from the database
-    await prisma.organization.delete({
-      where: { id: validatedParams.data.id },
+    // Remove org-scoped sessions first, then delete the organization.
+    // Memberships are cleaned up by the Prisma cascade on Membership.organization.
+    await prisma.$transaction(async (tx) => {
+      await tx.session.deleteMany({
+        where: { organizationId: validatedParams.data.id },
+      });
+
+      await tx.organization.delete({
+        where: { id: validatedParams.data.id },
+      });
     });
 
     OKResponse(res, StatusCodes.OK, 'Organization deleted successfully');

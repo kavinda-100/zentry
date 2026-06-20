@@ -317,3 +317,22 @@ export const getMe = async (req: Request, res: Response, next: NextFunction) => 
     next(e);
   }
 };
+
+/**
+ * @description This function is used to check if the user is authenticated. This can be used by the frontend to check if the user is still authenticated or not (e.g., when the user refreshes the page).
+ * */
+export const checkIsAuthenticated = async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    logger.info('checkIsAuthenticated auth route hit');
+
+    const reBody = {
+      isAuthenticated: true,
+    };
+
+    // if user hit this route, it means the user is authenticated.
+    // because the requireAuthenticatedSession middleware is used in this route, so we can just return a success response
+    OKResponse(res, StatusCodes.OK, 'user is authenticated', reBody);
+  } catch (e) {
+    next(e);
+  }
+};

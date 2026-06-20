@@ -24,9 +24,13 @@ const GoogleButton = ({ classnames, setShowAlert, setErrorMessage }: GoogleButto
     setErrorMessage(null);
     setItemToLocalStorage<LastAuthenticatedMethodType>(LAST_AUTHENTICATED_METHOD, 'google');
 
+    // google auth flow
+    // callbackUrl is the url to redirect to after the user logs in with Google
+    const callbackUrl = `${env.VITE_UI_URL}/dashboard`;
+    // redirect to the Google OAuth2 authorization endpoint with the callbackUrl as a query parameter
     window.location.assign(
       new URL(
-        `${env.VITE_API_URL}/auth/providers/google?callbackurl=http://localhost:300/dashboard`,
+        `${env.VITE_API_URL}/auth/providers/google?callbackUrl=${encodeURIComponent(callbackUrl)}`,
       ).toString(),
     );
   };

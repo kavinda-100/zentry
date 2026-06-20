@@ -11,6 +11,7 @@ import * as React from 'react';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFoundComponent from '#/components/NotFoundComponent.tsx';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import { Toaster } from '@/components/ui/sonner';
 
 interface MyRouterContext {
   queryClient: QueryClient;
@@ -52,6 +53,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body>
         <ThemeProvider>
           <TooltipProvider>{children}</TooltipProvider>
+          <Toaster />
         </ThemeProvider>
         <TanStackDevtools
           config={{

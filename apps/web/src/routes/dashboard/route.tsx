@@ -1,15 +1,52 @@
-import { createFileRoute, Outlet } from '@tanstack/react-router';
+import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 import DashboardSideBar from '#/components/dashboard/DashboardSideBar.tsx';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar.tsx';
 import * as React from 'react';
 import { ModeToggle } from '#/components/ModeToggle.tsx';
+import { useEffect } from 'react';
+import { z } from 'zod';
+import { useLocalStorage } from '#/hooks/useLocalStorage.ts';
+import { SESSION_TOKEN_KEY } from '#/constants';
+import { getIsAuthenticated, storeSessionToken } from '#/hooks/auth/authentication.ts';
 
 export const Route = createFileRoute('/dashboard')({
+  ssr: false,
+  validateSearch: z.object({
+    token: z.string().optional(),
+  }),
+  beforeLoad: async ({ context, location, search }) => {
+    if (search.token) {
+      storeSessionToken(search.token);
+    }
+
+    const isAuthenticated = await getIsAuthenticated(context.queryClient);
+    if (!isAuthenticated) {
+      throw redirect({
+        to: '/login',
+        search: {
+          redirect: location.href,
+        },
+      });
+    }
+  },
   component: RouteComponent,
 });
 
 // Dashboard Layout
 function RouteComponent() {
+  const { token } = Route.useSearch();
+  const { setItemToLocalStorage } = useLocalStorage();
+
+  // set token to local storage
+  // this is for the case when user is redirected from Google login
+  // it returns the token in the URL search params, we need to store it in local storage for future use
+  // `https://zentry.app/dashboard?token=abc123...`
+  useEffect(() => {
+    if (!token) return;
+
+    setItemToLocalStorage<string>(SESSION_TOKEN_KEY, token);
+  }, [setItemToLocalStorage, token]);
+
   return (
     <SidebarProvider
       style={
