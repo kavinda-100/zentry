@@ -195,7 +195,11 @@ function VerifyEmailComponent() {
 
         <p className="text-sm text-muted-foreground">
           Need to go back?{' '}
-          <Link to="/login" className="font-medium text-foreground underline underline-offset-4">
+          <Link
+            to="/login"
+            search={{ redirect: undefined }}
+            className="font-medium text-foreground underline underline-offset-4"
+          >
             Return to login
           </Link>
         </p>

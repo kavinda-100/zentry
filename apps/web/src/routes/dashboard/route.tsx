@@ -10,21 +10,23 @@ import { SESSION_TOKEN_KEY } from '#/constants';
 import { getIsAuthenticated, storeSessionToken } from '#/hooks/auth/authentication.ts';
 
 export const Route = createFileRoute('/dashboard')({
+  ssr: false,
   validateSearch: z.object({
     token: z.string().optional(),
   }),
-  beforeLoad: async ({ context, search }) => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
+  beforeLoad: async ({ context, location, search }) => {
     if (search.token) {
       storeSessionToken(search.token);
     }
 
     const isAuthenticated = await getIsAuthenticated(context.queryClient);
     if (!isAuthenticated) {
-      throw redirect({ to: '/login' });
+      throw redirect({
+        to: '/login',
+        search: {
+          redirect: location.href,
+        },
+      });
     }
   },
   component: RouteComponent,

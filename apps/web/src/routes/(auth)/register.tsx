@@ -231,7 +231,11 @@ function RegisterComponent() {
 
         <p className="text-sm text-muted-foreground">
           Already have an account?{' '}
-          <Link to="/login" className="font-medium text-foreground underline underline-offset-4">
+          <Link
+            to="/login"
+            search={{ redirect: undefined }}
+            className="font-medium text-foreground underline underline-offset-4"
+          >
             Login here
           </Link>
         </p>

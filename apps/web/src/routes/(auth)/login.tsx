@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, Link, useNavigate, useRouter } from '@tanstack/react-router';
 import { loginSchema, type LoginSchemaType } from '@zentry/validation';
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { Controller, useForm } from 'react-hook-form';
@@ -24,15 +24,20 @@ import type { LastAuthenticatedMethodType } from '#/types';
 import { useLogIn } from '#/hooks/auth/useLogIn.ts';
 
 export const Route = createFileRoute('/(auth)/login')({
+  validateSearch: (search) => ({
+    redirect: typeof search.redirect === 'string' ? search.redirect : undefined,
+  }),
   component: LogInComponent,
 });
 
 function LogInComponent() {
+  const { redirect } = Route.useSearch();
   const [showAlert, setShowAlert] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const { isPending, mutate } = useLogIn();
   const navigate = useNavigate();
+  const router = useRouter();
   const { setItemToLocalStorage, getItemFromLocalStorage } = useLocalStorage();
   const lastAuthenticatedMethod =
     getItemFromLocalStorage<LastAuthenticatedMethodType>(LAST_AUTHENTICATED_METHOD);
@@ -60,6 +65,12 @@ function LogInComponent() {
         console.log('login response:', response);
         setItemToLocalStorage<string>(SESSION_TOKEN_KEY, response.data.session.token);
         setItemToLocalStorage<LastAuthenticatedMethodType>(LAST_AUTHENTICATED_METHOD, 'credential');
+
+        if (redirect) {
+          router.history.push(redirect);
+          return;
+        }
+
         await navigate({
           to: '/dashboard',
         });
