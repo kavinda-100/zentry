@@ -1,7 +1,5 @@
 import { z } from 'zod';
 
-export const isoDateStringSchema = z.string().min(1);
-
 const responseBaseSchema = {
   status_code: z.number().int().nonnegative(),
   message: z.string(),
@@ -21,14 +19,13 @@ export const createErrorResponseSchema = <TData extends z.ZodType>(dataSchema: T
     data: dataSchema,
   });
 
+// -----------------------------------------------------------------------------------------------------------------------------------------------
+// NOTE: These schemas are not used in the current project, but they are kept here for future reference.
+export const isoDateStringSchema = z.string().min(1);
 export const providerTypeSchema = z.enum(['CREDENTIAL', 'OAUTH']);
 export const authProviderSchema = z.enum(['LOCAL', 'GOOGLE']);
 export const roleSchema = z.enum(['ADMIN', 'MEMBER']);
-export const otpPurposeSchema = z.enum([
-  'EMAIL_VERIFICATION',
-  'TWO_FACTOR_AUTH',
-  'RESET_PASSWORD',
-]);
+export const otpPurposeSchema = z.enum(['EMAIL_VERIFICATION', 'TWO_FACTOR_AUTH', 'RESET_PASSWORD']);
 export const jsonValueSchema = z.unknown();
 
 export const userSchema = z.object({

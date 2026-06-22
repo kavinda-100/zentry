@@ -46,6 +46,6 @@ router.get('/providers/google', standardRateLimiter, googleOauth);
 router.get('/providers/google/callback', standardRateLimiter, googleOauthCallback);
 
 // for organizational auth routes
-// router.post('/register/org/:orgId', strictRateLimiter, registerOrganization);
+// router.post('/org/:orgId/register', strictRateLimiter, registerOrganization);
 
 export default router;

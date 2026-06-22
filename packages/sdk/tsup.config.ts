@@ -14,12 +14,12 @@ export default defineConfig({
   banner: {
     js: `// Zentry Engine Core Pipeline Output`,
   },
-  esbuildOptions(options, context) {
-    // Inject "use client" into the top of the interactive React entry bundle
-    if (context.format === 'esm' && options.entryPoints && 'react/index' in options.entryPoints) {
-      options.banner = {
-        js: '"use client";\n',
-      };
-    }
-  },
+  // esbuildOptions(options, context) {
+  //   // Inject "use client" into the top of the interactive React entry bundle
+  //   if (context.format === 'esm' && options.entryPoints && 'react/index' in options.entryPoints) {
+  //     options.banner = {
+  //       js: '"use client";\n',
+  //     };
+  //   }
+  // },
 });
