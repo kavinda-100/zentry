@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { API_BASE_URL } from '../constants';
+import { API_BASE_URL, ORG_ID_HEADER } from '../constants';
 import type { ClientEnv } from '../env';
 import { createOkResponseSchema, ZentrySessionSchema, type ZentrySessionType } from '../zod';
 
@@ -95,7 +95,7 @@ export async function getServerSession(
 ): Promise<ZentrySessionType | null> {
   try {
     const headers: Record<string, string> = {
-      'X-Zentry-Org-ID': options.env.ZENTRY_ORG_ID,
+      [ORG_ID_HEADER]: options.env.ZENTRY_ORG_ID,
     };
 
     if (options.token) {
