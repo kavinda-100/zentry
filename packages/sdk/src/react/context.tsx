@@ -11,6 +11,7 @@ interface ZentryContextType {
   register: () => void;
   login: () => void;
   logout: () => Promise<void>;
+  getSessionToken: () => string | null;
 }
 
 const getActiveToken = () => {
@@ -117,9 +118,13 @@ export function ZentryProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const getSessionToken = () => {
+    return getActiveToken();
+  };
+
   return (
     <ZentryContext.Provider
-      value={{ isAuthenticated, isLoading, session, login, logout, register }}
+      value={{ isAuthenticated, isLoading, session, login, logout, register, getSessionToken }}
     >
       {children}
     </ZentryContext.Provider>
