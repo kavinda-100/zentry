@@ -7,6 +7,14 @@
   ],
   "author": "Kavinda Rathnayake",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kavinda-100/zentry"
+  },
+  "bugs": {
+    "url": "https://github.com/kavinda-100/zentry/issues"
+  },
+  "homepage": "https://github.com/kavinda-100/zentry#readme",
   "exports": {
     "./react": {
       "types": "./dist/react/index.d.ts",
