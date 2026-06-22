@@ -2,9 +2,9 @@ import { defineConfig } from 'tsup';
 
 export default defineConfig({
   entry: {
-    'react/index': 'src/react/index.ts',
-    'react/server': 'src/react/server.ts',
-    'node/index': 'src/node/index.ts',
+    'react/index': 'react/index.ts',
+    'react/server': 'react/server.ts',
+    'node/index': 'node/index.ts',
   },
   format: ['esm', 'cjs'],
   dts: true,

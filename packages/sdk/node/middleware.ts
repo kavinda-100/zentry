@@ -1,5 +1,5 @@
-import { NextFunction } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 
-export function createMiddleware(req: Request, res: Response, next: NextFunction) {
+export function createMiddleware(_req: Request, _res: Response, next: NextFunction) {
   next();
 }
