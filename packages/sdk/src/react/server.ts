@@ -1,9 +1,10 @@
 import axios from 'axios';
 import { API_BASE_URL } from '../constants';
-import { env } from '../env';
+import type { ClientEnv } from '../env';
 import { createOkResponseSchema, ZentrySessionSchema, type ZentrySessionType } from '../zod';
 
 export interface GetServerSessionOptions {
+  env: Pick<ClientEnv, 'ZENTRY_ORG_ID'>;
   token?: string;
   cookie?: string;
 }
@@ -29,7 +30,12 @@ export interface GetServerSessionOptions {
  * export const getCurrentSession = createServerFn({ method: 'POST' })
  *   .validator((token: string) => token)
  *   .handler(async ({ data }) => {
- *     return getServerSession({ token: data });
+ *     return getServerSession({
+ *       env: {
+ *         ZENTRY_ORG_ID: process.env.ZENTRY_ORG_ID!,
+ *       },
+ *       token: data,
+ *     });
  *   });
  *
  * export function SessionGate() {
@@ -53,6 +59,9 @@ export interface GetServerSessionOptions {
  * async function fetchSession() {
  *   const cookieStore = await cookies();
  *   const session = await getServerSession({
+ *     env: {
+ *       ZENTRY_ORG_ID: process.env.ZENTRY_ORG_ID!,
+ *     },
  *     cookie: cookieStore.toString(),
  *   });
  *
@@ -72,16 +81,21 @@ export interface GetServerSessionOptions {
  * import { getServerSession } from '@zentry/sdk/react/server';
  *
  * export async function loadUserSession(token: string) {
- *   return getServerSession({ token });
+ *   return getServerSession({
+ *     env: {
+ *       ZENTRY_ORG_ID: process.env.ZENTRY_ORG_ID!,
+ *     },
+ *     token,
+ *   });
  * }
  * ```
  * */
 export async function getServerSession(
-  options: GetServerSessionOptions = {},
+  options: GetServerSessionOptions,
 ): Promise<ZentrySessionType | null> {
   try {
     const headers: Record<string, string> = {
-      'X-Zentry-Org-ID': env.ZENTRY_ORG_ID,
+      'X-Zentry-Org-ID': options.env.ZENTRY_ORG_ID,
     };
 
     if (options.token) {

@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import axios from 'axios';
 import { API_BASE_URL, SESSION_TOKEN, ZENTRY_UI_BASE_URL } from '../constants';
-import { env } from '../env';
+import type { ClientEnv } from '../env';
 import { createOkResponseSchema, ZentrySessionSchema, type ZentrySessionType } from '../zod';
 
 interface ZentryContextType {
@@ -12,6 +12,11 @@ interface ZentryContextType {
   login: () => void;
   logout: () => Promise<void>;
   getSessionToken: () => string | null;
+}
+
+export interface ZentryProviderProps {
+  children: ReactNode;
+  env: Pick<ClientEnv, 'ZENTRY_ORG_ID' | 'ZENTRY_APP_CALLBACK_URL'>;
 }
 
 const getActiveToken = () => {
@@ -31,7 +36,7 @@ const removeItemFromLocalStorage = (key: string) => {
 
 const ZentryContext = createContext<ZentryContextType | undefined>(undefined);
 
-export function ZentryProvider({ children }: { children: ReactNode }) {
+export function ZentryProvider({ children, env }: ZentryProviderProps) {
   const [session, setSession] = useState<ZentrySessionType | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);

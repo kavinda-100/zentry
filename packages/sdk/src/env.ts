@@ -1,31 +1,39 @@
 import { z } from 'zod';
-import dotenv from 'dotenv';
-import findConfig from 'find-config';
 
-dotenv.config();
-
-// Automatically traverse upward until the root .env file is found
-const envPath = findConfig('.env');
-
-if (envPath) {
-  dotenv.config({ path: envPath });
-} else {
-  throw new Error('No .env file found in the project root. Please create one at the root.');
-}
-
-export const EnvSchema = z.object({
-  ZENTRY_ORG_ID: z.string({ error: 'ZENTRY_ORG_ID is required' }),
-  ZENTRY_API_KEY: z.string({ error: 'ZENTRY_API_KEY_RAW is required' }),
-  ZENTRY_APP_HOME_URL: z.string({ error: 'ZENTRY_APP_HOME_URL is required' }),
-  ZENTRY_APP_CALLBACK_URL: z.string({ error: 'ZENTRY_APP_CALLBACK_URL is required' }),
+export const ClientEnvSchema = z.object({
+  ZENTRY_ORG_ID: z.string().min(1, 'ZENTRY_ORG_ID is required'),
+  ZENTRY_APP_CALLBACK_URL: z.string().min(1, 'ZENTRY_APP_CALLBACK_URL is required'),
+  ZENTRY_API_BASE_URL: z.string().min(1).optional(),
+  ZENTRY_UI_BASE_URL: z.string().min(1).optional(),
 });
 
-const validatedEnv = EnvSchema.safeParse(process.env);
+export const ServerEnvSchema = ClientEnvSchema.extend({
+  ZENTRY_APP_HOME_URL: z.string().min(1, 'ZENTRY_APP_HOME_URL is required').optional(),
+});
 
-if (!validatedEnv.success) {
-  throw new Error(
-    `Invalid environment variables: ${validatedEnv.error.issues.map((issue) => issue.message).join(', ')}`,
-  );
+export type ClientEnv = z.infer<typeof ClientEnvSchema>;
+export type ServerEnv = z.infer<typeof ServerEnvSchema>;
+
+function formatIssues(error: z.ZodError) {
+  return error.issues.map((issue) => issue.message).join(', ');
 }
 
-export const env = validatedEnv.data;
+export function parseClientEnv(source: Record<string, unknown>): ClientEnv {
+  const validatedEnv = ClientEnvSchema.safeParse(source);
+
+  if (!validatedEnv.success) {
+    throw new Error(`Invalid Zentry client environment: ${formatIssues(validatedEnv.error)}`);
+  }
+
+  return validatedEnv.data;
+}
+
+export function parseServerEnv(source: Record<string, unknown>): ServerEnv {
+  const validatedEnv = ServerEnvSchema.safeParse(source);
+
+  if (!validatedEnv.success) {
+    throw new Error(`Invalid Zentry server environment: ${formatIssues(validatedEnv.error)}`);
+  }
+
+  return validatedEnv.data;
+}
