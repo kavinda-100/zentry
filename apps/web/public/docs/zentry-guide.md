@@ -23,9 +23,9 @@ For a request to be treated as an authenticated user request inside an organizat
 3. the frontend stores that token in `localStorage`
 4. the frontend sends the token on requests to the developer's backend API
 5. the backend validates that user token against Zentry using:
-   - the forwarded user token
-   - the organization's `orgId`
-   - the organization's secret `apiKey`
+    - the forwarded user token
+    - the organization's `orgId`
+    - the organization's secret `apiKey`
 6. Zentry returns the validated session in the shared `ZentrySessionType` shape
 
 The backend never identifies a user from `orgId` and `apiKey` alone. Those values identify the organization and application. The user token identifies the signed-in user.
@@ -177,7 +177,7 @@ export default function AuthCallbackPage() {
 
 ### TanStack Start
 
-TanStack Start apps typically mount shared providers inside the root route shell. 
+TanStack Start apps typically mount shared providers inside the root route shell.
 In a setup like `your-app/src/routes/__root.tsx`,
 add `ZentryProvider` inside the `RootDocument` body alongside your other app-wide providers.
 
@@ -537,14 +537,14 @@ In the current version it does not perform a remote org verification request by 
 1. frontend sends `Authorization: Bearer <token>` to the developer API
 2. Express route uses `zentry.requireUser()`
 3. the SDK sends a request to Zentry with:
-   - the user token in `Authorization`
-   - the org ID header
-   - the org API key header
+    - the user token in `Authorization`
+    - the org ID header
+    - the org API key header
 4. Zentry validates:
-   - organization identity
-   - API key
-   - user session token
-   - organization membership
+    - organization identity
+    - API key
+    - user session token
+    - organization membership
 5. Zentry returns the normalized session payload
 6. the SDK attaches the payload to `req.zentry`
 7. the route handler uses `req.zentry`
