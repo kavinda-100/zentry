@@ -3,12 +3,12 @@
   "compilerOptions": {
     "forceConsistentCasingInFileNames": true,
     "incremental": true,
-    "rootDir": ".",
+    "rootDir": "./src",
     "outDir": "./dist",
     "tsBuildInfoFile": "./.tsbuildinfo",
     "ignoreDeprecations": "6.0",
     "jsx": "react-jsx"
   },
-  "include": ["**/*.ts", "**/**/*.ts", "**/*.tsx", "**/**/*.tsx", "**/*.d.ts", "**/**/*.d.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.d.ts"],
   "exclude": ["node_modules", "dist", "build", "out"]
 }

@@ -2,6 +2,9 @@
   "name": "@zentry/sdk",
   "version": "0.0.1",
   "type": "module",
+  "files": [
+    "dist"
+  ],
   "author": "Kavinda Rathnayake",
   "license": "MIT",
   "exports": {
