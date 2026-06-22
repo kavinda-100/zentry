@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import axios from 'axios';
-import { API_BASE_URL, SESSION_TOKEN, ZENTRY_UI_BASE_URL } from './constants';
-import { env } from './env';
-import { createOkResponseSchema, ZentrySessionSchema, type ZentrySessionType } from './zod';
+import { API_BASE_URL, SESSION_TOKEN, ZENTRY_UI_BASE_URL } from '../constants';
+import { env } from '../env';
+import { createOkResponseSchema, ZentrySessionSchema, type ZentrySessionType } from '../zod';
 
 interface ZentryContextType {
   isAuthenticated: boolean;

@@ -2,6 +2,8 @@ import { z } from 'zod';
 import dotenv from 'dotenv';
 import findConfig from 'find-config';
 
+dotenv.config();
+
 // Automatically traverse upward until the root .env file is found
 const envPath = findConfig('.env');
 

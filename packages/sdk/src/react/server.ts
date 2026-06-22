@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { API_BASE_URL } from './constants';
-import { env } from './env';
-import { createOkResponseSchema, ZentrySessionSchema, type ZentrySessionType } from './zod';
+import { API_BASE_URL } from '../constants';
+import { env } from '../env';
+import { createOkResponseSchema, ZentrySessionSchema, type ZentrySessionType } from '../zod';
 
 export interface GetServerSessionOptions {
   token?: string;
