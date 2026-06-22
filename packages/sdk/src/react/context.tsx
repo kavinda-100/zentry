@@ -48,7 +48,6 @@ export function ZentryProvider({ children }: { children: ReactNode }) {
       const res = await axios.get(`${API_BASE_URL}/auth/org/me`, {
         headers: {
           'X-Zentry-Org-ID': env.ZENTRY_ORG_ID,
-          'X-Zentry-API-Key': env.ZENTRY_API_KEY,
           Authorization: `Bearer ${activeToken}`,
         },
       });
@@ -105,7 +104,6 @@ export function ZentryProvider({ children }: { children: ReactNode }) {
         {
           headers: {
             'X-Zentry-Org-ID': env.ZENTRY_ORG_ID,
-            'X-Zentry-API-Key': env.ZENTRY_API_KEY,
             Authorization: `Bearer ${activeToken}`,
           },
         },
