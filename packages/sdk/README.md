@@ -95,7 +95,7 @@ Notes:
 
 ### Built-in React components
 
-The SDK already exports raw, unstyled HTML components from [`src/react/components.tsx`](./src/react/components.tsx):
+The SDK already exports raw, unstyled HTML components.
 
 - `RegisterButton`
 - `LoginButton`
@@ -134,7 +134,7 @@ export function AuthActions() {
 
 ### Framework examples
 
-#### Vite + React
+### Vite + React
 
 Wrap your root app with `ZentryProvider`:
 
@@ -155,6 +155,21 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
 }
 ```
 
+Then mount it in `src/main.tsx`:
+```tsx
+import { AppProviders } from './AppProviders';
+import { createRoot } from 'react-dom/client';
+import App from './App';
+import './index.css';
+
+createRoot(document.getElementById('root')!).render(
+    <AppProviders>
+      <App />
+    </AppProviders>
+);
+
+```
+
 Use the callback hook on your callback route:
 
 ```tsx
@@ -166,24 +181,43 @@ export default function AuthCallbackPage() {
 }
 ```
 
-#### TanStack Start
+### TanStack Start
 
-Wrap the app provider near your root:
+TanStack Start apps typically mount shared providers inside the root route shell. 
+In a setup like `your-app/src/routes/__root.tsx`,
+add `ZentryProvider` inside the `RootDocument` body alongside your other app-wide providers.
 
 ```tsx
-import type { ReactNode } from 'react';
+import * as React from 'react';
+import { HeadContent, Scripts, createRootRouteWithContext } from '@tanstack/react-router';
+import type { QueryClient } from '@tanstack/react-query';
 import { ZentryProvider } from '@zentry/sdk/react';
 
-export function AppProviders({ children }: { children: ReactNode }) {
+interface MyRouterContext {
+  queryClient: QueryClient;
+}
+
+export const Route = createRootRouteWithContext<MyRouterContext>()({
+  shellComponent: RootDocument,
+});
+
+function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <ZentryProvider
-      env={{
-        ZENTRY_ORG_ID: process.env.ZENTRY_ORG_ID!,
-        ZENTRY_APP_CALLBACK_URL: `${process.env.ZENTRY_APP_URL!}/auth/callback`,
-      }}
-    >
-      {children}
-    </ZentryProvider>
+    <html lang="en">
+      <head>
+        <HeadContent />
+      </head>
+      <body>
+         <ZentryProvider env={{
+             ZENTRY_ORG_ID: import.meta.env.VITE_ZENTRY_ORG_ID,
+             ZENTRY_APP_CALLBACK_URL: `${window.location.origin}/auth/callback`,
+         }}
+         >
+            {children}
+         </ZentryProvider>
+        <Scripts />
+      </body>
+    </html>
   );
 }
 ```
@@ -222,7 +256,7 @@ export const getCurrentSession = createServerFn({ method: 'POST' })
   });
 ```
 
-#### Next.js
+### Next.js
 
 Wrap your client-side provider in a client component:
 
@@ -246,7 +280,7 @@ export function Providers({ children }: { children: ReactNode }) {
 }
 ```
 
-Mount it in `app/layout.tsx`:
+Mount it in `app/layout.tsx` or `src/app/layout.tsx`:
 
 ```tsx
 import type { ReactNode } from 'react';
@@ -303,8 +337,7 @@ export default async function DashboardPage() {
 ### Read auth state
 
 ```tsx
-import { useZentry } from '@zentry/sdk/react';
-import {LogoutButton} from '@zentry/sdk/react';
+import { useZentry, LogoutButton} from '@zentry/sdk/react';
 
 export function Profile() {
   const { session, isAuthenticated, isLoading } = useZentry();
@@ -352,7 +385,7 @@ export default function AuthCallbackPage() {
 
 When your frontend calls your own backend API, forward the Zentry token:
 
-```ts
+```tsx
 import axios from 'axios';
 import { useZentry } from '@zentry/sdk/react';
 
@@ -363,7 +396,8 @@ export function ExampleButton() {
     const token = getSessionToken();
     if (!token) return;
 
-    await axios.get('/api/me', {
+    // Forward the token to the backend API when making requests
+    await axios.get('/api/v1/*', {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -372,6 +406,34 @@ export function ExampleButton() {
 
   return <button onClick={handleClick}>Call API</button>;
 }
+```
+
+You can isolate the token attachment logic from the UI. (only work in browser environments, for server environments use the `getServerSession` helper described below)
+```ts
+import { useZentry } from '@zentry/sdk/react';
+import axios from 'axios';
+
+export const api = axios.create({
+   baseURL: 'your-api-url',
+   withCredentials: true,
+   headers: {
+     'Content-Type': 'application/json',
+   },
+})
+
+api.interceptors.request.use((config) => {
+   if (typeof window !== 'undefined') {
+       const { getSessionToken } = useZentry();
+      const storedToken = getSessionToken();
+
+      if (storedToken) {
+         config.headers = axios.AxiosHeaders.from(config.headers);
+         config.headers.set('Authorization', `Bearer ${storedToken}`);
+      }
+   }
+
+   return config;
+});
 ```
 
 This is the current integration model: the frontend forwards the user session token stored in `localStorage` to the developer's backend API on each authenticated request.
@@ -507,18 +569,6 @@ Backend apps send:
 - `Authorization: Bearer <user_token>`
 - `X-Zentry-Org-ID`
 - `X-Zentry-API-Key`
-
-## Central Zentry API Requirements
-
-For this SDK flow to work, the central Zentry API must expose the matching auth endpoints used by the SDK.
-
-Current responsibilities are:
-
-- frontend/browser session validation endpoint
-- frontend/browser org logout endpoint
-- backend/server session validation endpoint with API key verification
-
-If one of those endpoints is not implemented yet in the central API, the SDK wiring can be completed first, but the full flow will not work until that endpoint exists.
 
 ## Summary
 
