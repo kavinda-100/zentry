@@ -8,12 +8,14 @@ import {
   logout,
   getMe,
   checkIsAuthenticated,
+  getOrgMe,
 } from '../controllers/auth/standard/index.controller';
 import { verifyEmail } from '../controllers/auth/standard/verify.email.controller';
 import {
   googleOauth,
   googleOauthCallback,
 } from '../controllers/auth/standard/google.oauth.controller';
+import { resolveOrgContext, requireOrgMembership } from '../middleware/org';
 
 export const router = Router();
 
@@ -46,12 +48,12 @@ router.get('/providers/google', standardRateLimiter, googleOauth);
 router.get('/providers/google/callback', standardRateLimiter, googleOauthCallback);
 
 // for organizational auth routes
-//   router.get(
-//     '/auth/org/me',
-//     resolveOrgContext,
-//     requireAuthenticatedSession,
-//     requireOrgMembership,
-//     getOrgMe,
-//   );
+router.get(
+  '/org/me',
+  resolveOrgContext,
+  requireAuthenticatedSession,
+  requireOrgMembership,
+  getOrgMe,
+);
 
 export default router;

@@ -2,6 +2,7 @@ import type { RequestHandler, Request, Response, NextFunction } from 'express';
 import { prisma } from '@zentry/database';
 import { ErrorResponse } from '../../utils/responseHandles';
 import { StatusCodes } from '../../utils/statusCodes';
+import { hashApiKey } from '../../utils/crypto';
 
 export const resolveOrgContext: RequestHandler = async (
   req: Request,
@@ -9,6 +10,7 @@ export const resolveOrgContext: RequestHandler = async (
   next: NextFunction,
 ) => {
   const orgId = req.header('X-Zentry-Org-ID')?.trim();
+  const apiKey = req.header('X-Zentry-API-Key')?.trim();
 
   if (!orgId) {
     ErrorResponse(res, StatusCodes.BAD_REQUEST, 'X-Zentry-Org-ID is required.');
@@ -21,6 +23,7 @@ export const resolveOrgContext: RequestHandler = async (
       id: true,
       name: true,
       rootAdminId: true,
+      apiKeyHash: true,
       appHomeUrl: true,
       appCallbackUrl: true,
     },
@@ -31,7 +34,15 @@ export const resolveOrgContext: RequestHandler = async (
     return;
   }
 
-  req.org.id = org.id;
+  if (apiKey && hashApiKey(apiKey) !== org.apiKeyHash) {
+    ErrorResponse(res, StatusCodes.UNAUTHORIZED, 'Invalid organization API key.');
+    return;
+  }
+
+  req.org = {
+    ...(req.org ?? {}),
+    id: org.id,
+  };
   next();
 };
 

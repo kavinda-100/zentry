@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import axios from 'axios';
-import { API_BASE_URL, SESSION_TOKEN, ZENTRY_UI_BASE_URL } from '../constants';
+import { API_BASE_URL, ORG_ID_HEADER, SESSION_TOKEN, ZENTRY_UI_BASE_URL } from '../constants';
 import type { ClientEnv } from '../env';
 import { createOkResponseSchema, ZentrySessionSchema, type ZentrySessionType } from '../zod';
 
@@ -53,7 +53,7 @@ export function ZentryProvider({ children, env }: ZentryProviderProps) {
       // Validate token against your central Zentry server
       const res = await axios.get(`${API_BASE_URL}/auth/org/me`, {
         headers: {
-          'X-Zentry-Org-ID': env.ZENTRY_ORG_ID,
+          [ORG_ID_HEADER]: env.ZENTRY_ORG_ID,
           Authorization: `Bearer ${activeToken}`,
         },
       });
@@ -109,7 +109,7 @@ export function ZentryProvider({ children, env }: ZentryProviderProps) {
         {},
         {
           headers: {
-            'X-Zentry-Org-ID': env.ZENTRY_ORG_ID,
+            [ORG_ID_HEADER]: env.ZENTRY_ORG_ID,
             Authorization: `Bearer ${activeToken}`,
           },
         },
