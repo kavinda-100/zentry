@@ -88,12 +88,18 @@ export function ZentryProvider({ children, env }: ZentryProviderProps) {
 
   // Redirect to Zentry UI if not authenticated
   const register = () => {
-    window.location.href = `${ZENTRY_UI_BASE_URL}/org/register?callbackUrl=${encodeURIComponent(env.ZENTRY_APP_CALLBACK_URL)}`;
+    const url = new URL(`${ZENTRY_UI_BASE_URL}/org/register`);
+    url.searchParams.set('callbackUrl', env.ZENTRY_APP_CALLBACK_URL);
+    url.searchParams.set('orgId', env.ZENTRY_ORG_ID);
+    window.location.href = url.toString();
   };
 
   // Redirect to Zentry UI if not authenticated
   const login = () => {
-    window.location.href = `${ZENTRY_UI_BASE_URL}/org/login?callbackUrl=${encodeURIComponent(env.ZENTRY_APP_CALLBACK_URL)}`;
+    const url = new URL(`${ZENTRY_UI_BASE_URL}/org/login`);
+    url.searchParams.set('callbackUrl', env.ZENTRY_APP_CALLBACK_URL);
+    url.searchParams.set('orgId', env.ZENTRY_ORG_ID);
+    window.location.href = url.toString();
   };
 
   // Logout function
