@@ -15,7 +15,7 @@ import {
   googleOauthCallback,
 } from '../controllers/auth/standard/google.oauth.controller';
 import { resolveOrgContext, requireOrgMembership } from '../middleware/org';
-import { getOrgMe } from '../controllers/auth/org/index.controller';
+import { getOrgMe, orgRegister } from '../controllers/auth/org/index.controller';
 
 export const router = Router();
 
@@ -49,9 +49,12 @@ router.get('/providers/google/callback', standardRateLimiter, googleOauthCallbac
 
 // ------------------------------------ for organizational auth routes ----------------------------------------------------
 
+// POST https://localhost:5000/api/v1/auth/org/register
+router.post('/org/register', strictRateLimiter, resolveOrgContext, orgRegister);
 // GET https://localhost:5000/api/v1/auth/org/me
 router.get(
   '/org/me',
+  standardRateLimiter,
   resolveOrgContext,
   requireAuthenticatedSession,
   requireOrgMembership,
