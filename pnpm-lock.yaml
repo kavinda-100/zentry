@@ -330,9 +330,6 @@ importers:
 
   packages/sdk:
     dependencies:
-      '@zentry/validation':
-        specifier: workspace:*
-        version: link:../validation
       axios:
         specifier: ^1.18.0
         version: 1.18.0

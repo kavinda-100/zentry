@@ -1,5 +1,5 @@
 {
-  "name": "@zentry/sdk",
+  "name": "@zentry-org/sdk",
   "version": "0.0.1",
   "type": "module",
   "files": [
@@ -40,7 +40,6 @@
     "react": "^18.0.0 || ^19.0.0"
   },
   "dependencies": {
-    "@zentry/validation": "workspace:*",
     "axios": "^1.18.0",
     "react-dom": "^19.2.7",
     "tsup": "^8.5.1",

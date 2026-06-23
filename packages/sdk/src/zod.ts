@@ -1,10 +1,21 @@
 import { z } from 'zod';
-import {
-  userSchema,
-  organizationSchema,
-  membershipSchema,
-  accountSchema,
-} from '@zentry/validation';
+
+export const isoDateStringSchema = z.string().min(1);
+export const providerTypeSchema = z.enum(['CREDENTIAL', 'OAUTH']);
+export const authProviderSchema = z.enum(['LOCAL', 'GOOGLE']);
+export const roleSchema = z.enum(['ADMIN', 'MEMBER']);
+export const jsonValueSchema = z.unknown();
+
+export const userSchema = z.object({
+  id: z.uuid(),
+  email: z.email(),
+  firstName: z.string(),
+  lastName: z.string(),
+  emailVerified: z.boolean(),
+  imageUrl: z.string().nullable(),
+  createdAt: isoDateStringSchema,
+  updatedAt: isoDateStringSchema,
+});
 
 const responseBaseSchema = {
   status_code: z.number().int().nonnegative(),
@@ -21,21 +32,21 @@ export const createOkResponseSchema = <TData extends z.ZodType>(dataSchema: TDat
 export const ZentrySessionSchema = z.object({
   user: userSchema,
   org: z.object({
-    id: organizationSchema.shape.id,
-    name: organizationSchema.shape.name,
+    id: z.uuid(),
+    name: z.string(),
   }),
   membership: z.object({
-    id: membershipSchema.shape.id,
-    role: membershipSchema.shape.role,
-    isBanned: membershipSchema.shape.isBanned,
-    permissions: membershipSchema.shape.permissions,
+    id: z.uuid(),
+    role: roleSchema,
+    isBanned: z.boolean(),
+    permissions: jsonValueSchema.nullable(),
   }),
   account: z.object({
-    id: accountSchema.shape.id,
-    provider: accountSchema.shape.provider,
-    providerType: accountSchema.shape.providerType,
-    accountId: accountSchema.shape.accountId,
-    providerAvatarUrl: accountSchema.shape.providerAvatarUrl,
+    id: z.uuid(),
+    provider: authProviderSchema,
+    providerType: providerTypeSchema,
+    accountId: z.string(),
+    providerAvatarUrl: z.string().nullable(),
   }),
 });
 
