@@ -1,11 +1,11 @@
-# `@zentry/sdk`
+# `@zentry-org/sdk`
 
 Zentry SDK for frontend apps and backend APIs.
 
 This package supports two integration layers:
 
-- `@zentry/sdk/react` for browser apps such as Vite + React, Next.js, and TanStack Start
-- `@zentry/sdk/node` for backend APIs such as Express
+- `@zentry-org/sdk/react` for browser apps such as Vite + React, Next.js, and TanStack Start
+- `@zentry-org/sdk/node` for backend APIs such as Express
 
 Both layers use the same normalized session payload: `ZentrySessionType`.
 
@@ -23,9 +23,9 @@ For a request to be treated as an authenticated user request inside an organizat
 3. the frontend stores that token in `localStorage`
 4. the frontend sends the token on requests to the developer's backend API
 5. the backend validates that user token against Zentry using:
-    - the forwarded user token
-    - the organization's `orgId`
-    - the organization's secret `apiKey`
+   - the forwarded user token
+   - the organization's `orgId`
+   - the organization's secret `apiKey`
 6. Zentry returns the validated session in the shared `ZentrySessionType` shape
 
 The backend never identifies a user from `orgId` and `apiKey` alone. Those values identify the organization and application. The user token identifies the signed-in user.
@@ -48,13 +48,13 @@ req.zentry
 Type:
 
 ```ts
-import type { ZentrySessionType } from '@zentry/sdk/react';
+import type { ZentrySessionType } from '@zentry-org/sdk/react';
 ```
 
 ## Installation
 
 ```bash
-pnpm add @zentry/sdk
+pnpm add @zentry-org/sdk
 ```
 
 Peer dependencies:
@@ -108,7 +108,7 @@ import {
   LogoutButton,
   RegisterButton,
   UnAuthenticated,
-} from '@zentry/sdk/react';
+} from '@zentry-org/sdk/react';
 
 export function AuthActions() {
   return (
@@ -133,7 +133,7 @@ export function AuthActions() {
 Wrap your root app with `ZentryProvider`:
 
 ```tsx
-import { ZentryProvider } from '@zentry/sdk/react';
+import { ZentryProvider } from '@zentry-org/sdk/react';
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
@@ -167,7 +167,7 @@ createRoot(document.getElementById('root')!).render(
 Use the callback hook on your callback route:
 
 ```tsx
-import { useZentryCallbackSync } from '@zentry/sdk/react';
+import { useZentryCallbackSync } from '@zentry-org/sdk/react';
 
 export default function AuthCallbackPage() {
   useZentryCallbackSync();
@@ -185,7 +185,7 @@ add `ZentryProvider` inside the `RootDocument` body alongside your other app-wid
 import * as React from 'react';
 import { HeadContent, Scripts, createRootRouteWithContext } from '@tanstack/react-router';
 import type { QueryClient } from '@tanstack/react-query';
-import { ZentryProvider } from '@zentry/sdk/react';
+import { ZentryProvider } from '@zentry-org/sdk/react';
 
 interface MyRouterContext {
   queryClient: QueryClient;
@@ -220,7 +220,7 @@ Example callback page:
 
 ```tsx
 import { createFileRoute } from '@tanstack/react-router';
-import { useZentryCallbackSync } from '@zentry/sdk/react';
+import { useZentryCallbackSync } from '@zentry-org/sdk/react';
 
 export const Route = createFileRoute('/auth/callback')({
   component: AuthCallbackPage,
@@ -236,7 +236,7 @@ Example server-side session lookup:
 
 ```ts
 import { createServerFn } from '@tanstack/react-start';
-import { getServerSession } from '@zentry/sdk/react-server';
+import { getServerSession } from '@zentry-org/sdk/react-server';
 
 export const getCurrentSession = createServerFn({ method: 'POST' })
   .validator((token: string) => token)
@@ -258,7 +258,7 @@ Wrap your client-side provider in a client component:
 'use client';
 
 import type { ReactNode } from 'react';
-import { ZentryProvider } from '@zentry/sdk/react';
+import { ZentryProvider } from '@zentry-org/sdk/react';
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
@@ -296,7 +296,7 @@ Callback page example:
 ```tsx
 'use client';
 
-import { useZentryCallbackSync } from '@zentry/sdk/react';
+import { useZentryCallbackSync } from '@zentry-org/sdk/react';
 
 export default function AuthCallbackPage() {
   useZentryCallbackSync();
@@ -308,7 +308,7 @@ Server component session lookup example:
 
 ```tsx
 import { cookies } from 'next/headers';
-import { getServerSession } from '@zentry/sdk/react-server';
+import { getServerSession } from '@zentry-org/sdk/react-server';
 
 export default async function DashboardPage() {
   const cookieStore = await cookies();
@@ -331,7 +331,7 @@ export default async function DashboardPage() {
 ### Read auth state
 
 ```tsx
-import { useZentry, LogoutButton} from '@zentry/sdk/react';
+import { useZentry, LogoutButton} from '@zentry-org/sdk/react';
 
 export function Profile() {
   const { session, isAuthenticated, isLoading } = useZentry();
@@ -366,7 +366,7 @@ When Zentry redirects back to your app, the token is returned in the URL. Use `u
 - reload the app so session sync runs again
 
 ```tsx
-import { useZentryCallbackSync } from '@zentry/sdk/react';
+import { useZentryCallbackSync } from '@zentry-org/sdk/react';
 
 export default function AuthCallbackPage() {
   useZentryCallbackSync();
@@ -381,7 +381,7 @@ When your frontend calls your own backend API, forward the Zentry token:
 
 ```tsx
 import axios from 'axios';
-import { useZentry } from '@zentry/sdk/react';
+import { useZentry } from '@zentry-org/sdk/react';
 
 export function ExampleButton() {
   const { getSessionToken } = useZentry();
@@ -404,7 +404,7 @@ export function ExampleButton() {
 
 You can isolate the token attachment logic from the UI. (only work in browser environments, for server environments use the `getServerSession` helper described below)
 ```ts
-import { useZentry } from '@zentry/sdk/react';
+import { useZentry } from '@zentry-org/sdk/react';
 import axios from 'axios';
 
 export const api = axios.create({
@@ -439,13 +439,13 @@ For server-side React code, use the server helper when you need to validate a fo
 Import path:
 
 ```ts
-import { getServerSession } from '@zentry/sdk/react-server';
+import { getServerSession } from '@zentry-org/sdk/react-server';
 ```
 
 Example:
 
 ```ts
-import { getServerSession } from '@zentry/sdk/react-server';
+import { getServerSession } from '@zentry-org/sdk/react-server';
 
 export async function loadSession(token: string) {
   return getServerSession({
@@ -477,7 +477,7 @@ Notes:
 ### Create the client
 
 ```ts
-import { ZentryClient } from '@zentry/sdk/node';
+import { ZentryClient } from '@zentry-org/sdk/node';
 
 export const zentry = new ZentryClient({
   orgId: process.env.ZENTRY_ORG_ID!,
@@ -537,14 +537,14 @@ In the current version it does not perform a remote org verification request by 
 1. frontend sends `Authorization: Bearer <token>` to the developer API
 2. Express route uses `zentry.requireUser()`
 3. the SDK sends a request to Zentry with:
-    - the user token in `Authorization`
-    - the org ID header
-    - the org API key header
+   - the user token in `Authorization`
+   - the org ID header
+   - the org API key header
 4. Zentry validates:
-    - organization identity
-    - API key
-    - user session token
-    - organization membership
+   - organization identity
+   - API key
+   - user session token
+   - organization membership
 5. Zentry returns the normalized session payload
 6. the SDK attaches the payload to `req.zentry`
 7. the route handler uses `req.zentry`
@@ -568,9 +568,9 @@ Backend apps send:
 
 Use:
 
-- `@zentry/sdk/react` in the UI
-- `@zentry/sdk/react-server` for server-side React helpers
-- `@zentry/sdk/node` in the backend API
+- `@zentry-org/sdk/react` in the UI
+- `@zentry-org/sdk/react-server` for server-side React helpers
+- `@zentry-org/sdk/node` in the backend API
 
 The UI owns login and token capture.
 

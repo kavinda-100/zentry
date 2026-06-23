@@ -568,9 +568,9 @@ Backend apps send:
 
 Use:
 
-- `@zentry/sdk/react` in the UI
-- `@zentry/sdk/react-server` for server-side React helpers
-- `@zentry/sdk/node` in the backend API
+- `@zentry-org/sdk/react` in the UI
+- `@zentry-org/sdk/react-server` for server-side React helpers
+- `@zentry-org/sdk/node` in the backend API
 
 The UI owns login and token capture.
 
