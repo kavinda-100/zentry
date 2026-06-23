@@ -9,11 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as OrgRouteRouteImport } from './routes/org/route'
 import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
 import { Route as authRouteRouteImport } from './routes/(auth)/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as OrgVerifyEmailRouteImport } from './routes/org/verify-email'
+import { Route as OrgRegisterRouteImport } from './routes/org/register'
+import { Route as OrgLoginRouteImport } from './routes/org/login'
 import { Route as authVerifyEmailRouteImport } from './routes/(auth)/verify-email'
 import { Route as authRegisterRouteImport } from './routes/(auth)/register'
 import { Route as authLoginRouteImport } from './routes/(auth)/login'
@@ -23,6 +27,11 @@ import { Route as DashboardProjectsProjectIdIndexRouteImport } from './routes/da
 import { Route as DashboardProjectsProjectIdEditIndexRouteImport } from './routes/dashboard/projects/$projectId/edit/index'
 import { Route as DashboardProjectsProjectIdMemberMemberIdIndexRouteImport } from './routes/dashboard/projects/$projectId/member/$memberId/index'
 
+const OrgRouteRoute = OrgRouteRouteImport.update({
+  id: '/org',
+  path: '/org',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRouteRoute = DashboardRouteRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -46,6 +55,21 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => DashboardRouteRoute,
+} as any)
+const OrgVerifyEmailRoute = OrgVerifyEmailRouteImport.update({
+  id: '/verify-email',
+  path: '/verify-email',
+  getParentRoute: () => OrgRouteRoute,
+} as any)
+const OrgRegisterRoute = OrgRegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => OrgRouteRoute,
+} as any)
+const OrgLoginRoute = OrgLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => OrgRouteRoute,
 } as any)
 const authVerifyEmailRoute = authVerifyEmailRouteImport.update({
   id: '/verify-email',
@@ -94,9 +118,13 @@ const DashboardProjectsProjectIdMemberMemberIdIndexRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/org': typeof OrgRouteRouteWithChildren
   '/login': typeof authLoginRoute
   '/register': typeof authRegisterRoute
   '/verify-email': typeof authVerifyEmailRoute
+  '/org/login': typeof OrgLoginRoute
+  '/org/register': typeof OrgRegisterRoute
+  '/org/verify-email': typeof OrgVerifyEmailRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/docs/': typeof DocsIndexRoute
   '/dashboard/projects/': typeof DashboardProjectsIndexRoute
@@ -107,9 +135,13 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/org': typeof OrgRouteRouteWithChildren
   '/login': typeof authLoginRoute
   '/register': typeof authRegisterRoute
   '/verify-email': typeof authVerifyEmailRoute
+  '/org/login': typeof OrgLoginRoute
+  '/org/register': typeof OrgRegisterRoute
+  '/org/verify-email': typeof OrgVerifyEmailRoute
   '/dashboard': typeof DashboardIndexRoute
   '/docs': typeof DocsIndexRoute
   '/dashboard/projects': typeof DashboardProjectsIndexRoute
@@ -123,9 +155,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/(auth)': typeof authRouteRouteWithChildren
   '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/org': typeof OrgRouteRouteWithChildren
   '/(auth)/login': typeof authLoginRoute
   '/(auth)/register': typeof authRegisterRoute
   '/(auth)/verify-email': typeof authVerifyEmailRoute
+  '/org/login': typeof OrgLoginRoute
+  '/org/register': typeof OrgRegisterRoute
+  '/org/verify-email': typeof OrgVerifyEmailRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/docs/': typeof DocsIndexRoute
   '/dashboard/projects/': typeof DashboardProjectsIndexRoute
@@ -139,9 +175,13 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/org'
     | '/login'
     | '/register'
     | '/verify-email'
+    | '/org/login'
+    | '/org/register'
+    | '/org/verify-email'
     | '/dashboard/'
     | '/docs/'
     | '/dashboard/projects/'
@@ -152,9 +192,13 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/org'
     | '/login'
     | '/register'
     | '/verify-email'
+    | '/org/login'
+    | '/org/register'
+    | '/org/verify-email'
     | '/dashboard'
     | '/docs'
     | '/dashboard/projects'
@@ -167,9 +211,13 @@ export interface FileRouteTypes {
     | '/'
     | '/(auth)'
     | '/dashboard'
+    | '/org'
     | '/(auth)/login'
     | '/(auth)/register'
     | '/(auth)/verify-email'
+    | '/org/login'
+    | '/org/register'
+    | '/org/verify-email'
     | '/dashboard/'
     | '/docs/'
     | '/dashboard/projects/'
@@ -183,11 +231,19 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   authRouteRoute: typeof authRouteRouteWithChildren
   DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
+  OrgRouteRoute: typeof OrgRouteRouteWithChildren
   DocsIndexRoute: typeof DocsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/org': {
+      id: '/org'
+      path: '/org'
+      fullPath: '/org'
+      preLoaderRoute: typeof OrgRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
@@ -222,6 +278,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard/'
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof DashboardRouteRoute
+    }
+    '/org/verify-email': {
+      id: '/org/verify-email'
+      path: '/verify-email'
+      fullPath: '/org/verify-email'
+      preLoaderRoute: typeof OrgVerifyEmailRouteImport
+      parentRoute: typeof OrgRouteRoute
+    }
+    '/org/register': {
+      id: '/org/register'
+      path: '/register'
+      fullPath: '/org/register'
+      preLoaderRoute: typeof OrgRegisterRouteImport
+      parentRoute: typeof OrgRouteRoute
+    }
+    '/org/login': {
+      id: '/org/login'
+      path: '/login'
+      fullPath: '/org/login'
+      preLoaderRoute: typeof OrgLoginRouteImport
+      parentRoute: typeof OrgRouteRoute
     }
     '/(auth)/verify-email': {
       id: '/(auth)/verify-email'
@@ -322,10 +399,27 @@ const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
   DashboardRouteRouteChildren,
 )
 
+interface OrgRouteRouteChildren {
+  OrgLoginRoute: typeof OrgLoginRoute
+  OrgRegisterRoute: typeof OrgRegisterRoute
+  OrgVerifyEmailRoute: typeof OrgVerifyEmailRoute
+}
+
+const OrgRouteRouteChildren: OrgRouteRouteChildren = {
+  OrgLoginRoute: OrgLoginRoute,
+  OrgRegisterRoute: OrgRegisterRoute,
+  OrgVerifyEmailRoute: OrgVerifyEmailRoute,
+}
+
+const OrgRouteRouteWithChildren = OrgRouteRoute._addFileChildren(
+  OrgRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   authRouteRoute: authRouteRouteWithChildren,
   DashboardRouteRoute: DashboardRouteRouteWithChildren,
+  OrgRouteRoute: OrgRouteRouteWithChildren,
   DocsIndexRoute: DocsIndexRoute,
 }
 export const routeTree = rootRouteImport

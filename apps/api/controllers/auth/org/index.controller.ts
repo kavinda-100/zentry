@@ -23,7 +23,6 @@ import {
   updateAuthSessionInRedis,
   type createSessionInTheRedisProps,
 } from '../../../lib/redis/auth.redis';
-import { redis } from '../../../lib/redis/redis';
 import { publishAuthEvent } from '../../../lib/kafka';
 
 type createSessionProps = {
@@ -96,37 +95,29 @@ const setSessionCookie = (res: Response, sessionToken: string) => {
   });
 };
 
-// Stores the app callback target until org verification or redirect completes.
-const saveOrgUserCallBackUrlInRedis = async (userId: string, callbackUrl: string) => {
-  logger.info('Saving org user callback url in redis.');
-  await redis.set(`orgUserCallbackUrl:${userId}`, callbackUrl, {
-    EX: 30 * 60, // 30 minutes
-  });
-};
-
-// Reads the pending callback target for the current org auth flow.
-const getOrgUserCallbackUrlFromRedis = async (userId: string) => {
-  logger.info('Reading org user callback url from redis.');
-  return redis.get(`orgUserCallbackUrl:${userId}`);
-};
-
-// Clears the pending callback target once the flow is finished or invalidated.
-const deleteOrgUserCallbackUrlFromRedis = async (userId: string) => {
-  logger.info('Deleting org user callback url from redis.');
-  await redis.del(`orgUserCallbackUrl:${userId}`);
-};
-
-// Adds the session token to the callback URL without breaking existing query params.
-const buildCallbackUrlWithToken = (callbackUrl: string, sessionToken: string) => {
-  const redirectUrl = new URL(callbackUrl);
-  redirectUrl.searchParams.set('token', sessionToken);
-  return redirectUrl;
-};
-
 // Enforces that redirects only go to URLs registered on the organization.
 const isAllowedOrgCallbackUrl = (callbackUrl: string, allowedCallbackUrls: string[]) => {
   return allowedCallbackUrls.includes(callbackUrl);
 };
+
+// response builder for the org auth flow.
+// This response patten is expected in the UI `org/register` and `org/login` pages.`
+const buildOrgAuthFlowResponse = ({
+  callbackUrl,
+  sessionToken,
+  verificationRequired,
+}: {
+  callbackUrl: string;
+  sessionToken: string;
+  verificationRequired: boolean;
+}) => ({
+  session: {
+    token: sessionToken,
+  },
+  verificationRequired,
+  shouldRedirect: !verificationRequired,
+  callbackUrl,
+});
 
 // utility function to generate OTP, save it to the database and send a Kafka message to trigger email sending in the email service.
 const generateSaveAndSendmailVerification = async ({
@@ -277,7 +268,7 @@ const deleteOrgSessions = async (userId: string, orgId: string) => {
 
 /**
  * @description The registration flow for an organization user.
- * @returns either a success response or an error response or rediract.
+ * @returns either a success response or an error response.
  * */
 export const orgRegister = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -423,13 +414,7 @@ export const orgRegister = async (req: Request, res: Response, next: NextFunctio
 
     setSessionCookie(res, sessionToken);
 
-    const callbackUrlWithToken = buildCallbackUrlWithToken(
-      validatedQuery.data.callbackUrl,
-      sessionToken,
-    );
-
     if (!user.emailVerified) {
-      await saveOrgUserCallBackUrlInRedis(user.id, callbackUrlWithToken.toString());
       await generateSaveAndSendmailVerification({
         userId: user.id,
         email: user.email,
@@ -439,23 +424,31 @@ export const orgRegister = async (req: Request, res: Response, next: NextFunctio
         res,
         StatusCodes.OK,
         'User registered successfully - email verification pending.',
-        {
-          session: {
-            token: sessionToken,
-          },
+        buildOrgAuthFlowResponse({
+          callbackUrl: validatedQuery.data.callbackUrl,
+          sessionToken,
           verificationRequired: true,
-        },
+        }),
       );
     }
 
-    return res.redirect(callbackUrlWithToken.toString());
+    return OKResponse(
+      res,
+      StatusCodes.OK,
+      'User registered successfully.',
+      buildOrgAuthFlowResponse({
+        callbackUrl: validatedQuery.data.callbackUrl,
+        sessionToken,
+        verificationRequired: false,
+      }),
+    );
   } catch (e) {
     next(e);
   }
 };
 
 /**
- * @description Authenticates an existing LOCAL org user and redirects them to the app callback URL.
+ * @description Authenticates an existing LOCAL org user and returns the client redirect payload.
  * */
 export const orgLogin = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -494,10 +487,6 @@ export const orgLogin = async (req: Request, res: Response, next: NextFunction) 
     });
     if (!user) {
       return ErrorResponse(res, StatusCodes.NOT_FOUND, 'User not found');
-    }
-
-    if (!user.emailVerified) {
-      return ErrorResponse(res, StatusCodes.FORBIDDEN, 'Email not verified');
     }
 
     const account = await prisma.account.findFirst({
@@ -546,19 +535,41 @@ export const orgLogin = async (req: Request, res: Response, next: NextFunction) 
 
     setSessionCookie(res, sessionToken);
 
-    const callbackUrlWithToken = buildCallbackUrlWithToken(
-      validatedQuery.data.callbackUrl,
-      sessionToken,
-    );
+    if (!user.emailVerified) {
+      await generateSaveAndSendmailVerification({
+        userId: user.id,
+        email: user.email,
+      });
 
-    return res.redirect(callbackUrlWithToken.toString());
+      return OKResponse(
+        res,
+        StatusCodes.OK,
+        'Email verification required.',
+        buildOrgAuthFlowResponse({
+          callbackUrl: validatedQuery.data.callbackUrl,
+          sessionToken,
+          verificationRequired: true,
+        }),
+      );
+    }
+
+    return OKResponse(
+      res,
+      StatusCodes.OK,
+      'User logged in successfully.',
+      buildOrgAuthFlowResponse({
+        callbackUrl: validatedQuery.data.callbackUrl,
+        sessionToken,
+        verificationRequired: false,
+      }),
+    );
   } catch (e) {
     next(e);
   }
 };
 
 /**
- * @description Verifies an organization user's email and redirects them to the stored callback URL.
+ * @description Verifies an organization user's email and returns the client redirect payload.
  * */
 export const orgVerifyEmail = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -573,11 +584,23 @@ export const orgVerifyEmail = async (req: Request, res: Response, next: NextFunc
       );
     }
 
+    const validatedQuery = orgUserAuthCallbackUrlQuerySchema.safeParse(req.query);
+    if (!validatedQuery.success) {
+      return ErrorResponse(res, StatusCodes.BAD_REQUEST, 'Invalid request query', {
+        issues: formatZodIssues(validatedQuery.error.issues),
+      });
+    }
+
     const validatedBody = orgUserVerifyEmailSchema.safeParse(req.body);
     if (!validatedBody.success) {
       return ErrorResponse(res, StatusCodes.BAD_REQUEST, 'Invalid request body', {
         issues: formatZodIssues(validatedBody.error.issues),
       });
+    }
+
+    const callbackValidation = await validateOrgCallbackUrl(orgId, validatedQuery.data.callbackUrl);
+    if (!callbackValidation.success) {
+      return ErrorResponse(res, callbackValidation.statusCode, callbackValidation.message);
     }
 
     const user = await prisma.user.findUnique({
@@ -596,13 +619,16 @@ export const orgVerifyEmail = async (req: Request, res: Response, next: NextFunc
     }
 
     if (user.emailVerified) {
-      const callbackUrl = await getOrgUserCallbackUrlFromRedis(user.id);
-      if (callbackUrl) {
-        await deleteOrgUserCallbackUrlFromRedis(user.id);
-        return res.redirect(callbackUrl);
-      }
-
-      return OKResponse(res, StatusCodes.OK, 'Email already verified', null);
+      return OKResponse(
+        res,
+        StatusCodes.OK,
+        'Email already verified.',
+        buildOrgAuthFlowResponse({
+          callbackUrl: validatedQuery.data.callbackUrl,
+          sessionToken: req.token,
+          verificationRequired: false,
+        }),
+      );
     }
 
     const otpCode = await prisma.otpCode.findFirst({
@@ -618,15 +644,6 @@ export const orgVerifyEmail = async (req: Request, res: Response, next: NextFunc
 
     if (otpCode.expiresAt < new Date()) {
       return ErrorResponse(res, StatusCodes.BAD_REQUEST, 'OTP has expired');
-    }
-
-    const callbackUrl = await getOrgUserCallbackUrlFromRedis(user.id);
-    if (!callbackUrl) {
-      return ErrorResponse(
-        res,
-        StatusCodes.GONE,
-        'Verification session has expired. Please restart registration.',
-      );
     }
 
     await prisma.$transaction(async (tx) => {
@@ -650,8 +667,16 @@ export const orgVerifyEmail = async (req: Request, res: Response, next: NextFunc
       logger.debug('Failed to update org session in Redis cache.');
     }
 
-    await deleteOrgUserCallbackUrlFromRedis(user.id);
-    return res.redirect(callbackUrl);
+    return OKResponse(
+      res,
+      StatusCodes.OK,
+      'Email verified successfully.',
+      buildOrgAuthFlowResponse({
+        callbackUrl: validatedQuery.data.callbackUrl,
+        sessionToken: req.token,
+        verificationRequired: false,
+      }),
+    );
   } catch (e) {
     next(e);
   }
@@ -674,7 +699,6 @@ export const orgLogout = async (req: Request, res: Response, next: NextFunction)
     }
 
     await deleteOrgSessions(req.user.id, orgId);
-    await deleteOrgUserCallbackUrlFromRedis(req.user.id);
 
     res.clearCookie(SESSION_TOKEN_COOKIE_NAME);
 

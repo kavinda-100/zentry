@@ -26,6 +26,12 @@ export function storeSessionToken(token: string) {
   setItemToLocalStorage(SESSION_TOKEN_KEY, token);
 }
 
+export function buildCallbackUrlWithToken(callbackUrl: string, token: string) {
+  const redirectUrl = new URL(callbackUrl);
+  redirectUrl.searchParams.set('token', token);
+  return redirectUrl.toString();
+}
+
 export const getIsAuthenticatedQueryOptions = (token: string) =>
   queryOptions({
     queryKey: ['isAuthenticated', token],
