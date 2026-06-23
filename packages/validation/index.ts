@@ -11,3 +11,4 @@ export * from './src/auth/oAuth/google';
 // org
 export * from './src/org';
 export * from './src/org/members';
+export * from './src/org/auth';

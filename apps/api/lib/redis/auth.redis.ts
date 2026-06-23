@@ -6,7 +6,7 @@ import type { SessionObjectSchemaType } from '@zentry/validation/src/auth';
 /**
  * @description Type definition for the properties of the session object.
  * */
-type createSessionInTheRedisProps = {
+export type createSessionInTheRedisProps = {
   token: string;
   expiresInSeconds?: number;
   sessionObject: SessionObjectSchemaType;
