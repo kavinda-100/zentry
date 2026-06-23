@@ -6,16 +6,20 @@ import { prisma } from '@zentry/database';
 import {
   formatZodIssues,
   orgUserAuthCallbackUrlQuerySchema,
+  orgUserLoginSchema,
   orgUserRegisterSchema,
   orgUserVerifyEmailSchema,
 } from '@zentry/validation';
-import { generateOtp, generateSessionToken, hashPassword } from '../../../utils/crypto';
 import {
-  DEFAULT_SESSION_EXPIRY_IN_SECONDS,
-  SESSION_TOKEN_COOKIE_NAME,
-} from '../../../constants';
+  generateOtp,
+  generateSessionToken,
+  hashPassword,
+  verifyPassword,
+} from '../../../utils/crypto';
+import { DEFAULT_SESSION_EXPIRY_IN_SECONDS, SESSION_TOKEN_COOKIE_NAME } from '../../../constants';
 import {
   createAuthSessionInTheRedis,
+  deleteAuthSessionFromRedis,
   updateAuthSessionInRedis,
   type createSessionInTheRedisProps,
 } from '../../../lib/redis/auth.redis';
@@ -30,7 +34,8 @@ type createSessionProps = {
   userAgent?: string;
   expiresInSeconds?: Date;
 };
-// utility function to create a session in the database.
+
+// Persists an org-scoped session row and returns the opaque client token.
 const createSessionInDb = async (props: createSessionProps) => {
   const sessionToken = generateSessionToken();
 
@@ -51,7 +56,7 @@ const createSessionInDb = async (props: createSessionProps) => {
   return { sessionToken, dbSessionRecord };
 };
 
-// utility function to create a session in the Redis cache.
+// Mirrors the org-scoped session snapshot into Redis for request-time auth checks.
 const createSessionInRedis = async (props: createSessionInTheRedisProps) => {
   logger.info('Creating session in the Redis cache.');
   // save the session in the Redis cache
@@ -81,6 +86,7 @@ const createSessionInRedis = async (props: createSessionInTheRedisProps) => {
   });
 };
 
+// Applies the standard session cookie so browser clients can authenticate follow-up requests.
 const setSessionCookie = (res: Response, sessionToken: string) => {
   res.cookie(SESSION_TOKEN_COOKIE_NAME, sessionToken, {
     httpOnly: true,
@@ -90,7 +96,7 @@ const setSessionCookie = (res: Response, sessionToken: string) => {
   });
 };
 
-// utility function to save the org user callback url in the Redis cache.
+// Stores the app callback target until org verification or redirect completes.
 const saveOrgUserCallBackUrlInRedis = async (userId: string, callbackUrl: string) => {
   logger.info('Saving org user callback url in redis.');
   await redis.set(`orgUserCallbackUrl:${userId}`, callbackUrl, {
@@ -98,22 +104,26 @@ const saveOrgUserCallBackUrlInRedis = async (userId: string, callbackUrl: string
   });
 };
 
+// Reads the pending callback target for the current org auth flow.
 const getOrgUserCallbackUrlFromRedis = async (userId: string) => {
   logger.info('Reading org user callback url from redis.');
   return redis.get(`orgUserCallbackUrl:${userId}`);
 };
 
+// Clears the pending callback target once the flow is finished or invalidated.
 const deleteOrgUserCallbackUrlFromRedis = async (userId: string) => {
   logger.info('Deleting org user callback url from redis.');
   await redis.del(`orgUserCallbackUrl:${userId}`);
 };
 
+// Adds the session token to the callback URL without breaking existing query params.
 const buildCallbackUrlWithToken = (callbackUrl: string, sessionToken: string) => {
   const redirectUrl = new URL(callbackUrl);
   redirectUrl.searchParams.set('token', sessionToken);
   return redirectUrl;
 };
 
+// Enforces that redirects only go to URLs registered on the organization.
 const isAllowedOrgCallbackUrl = (callbackUrl: string, allowedCallbackUrls: string[]) => {
   return allowedCallbackUrls.includes(callbackUrl);
 };
@@ -158,6 +168,7 @@ const generateSaveAndSendmailVerification = async ({
   });
 };
 
+// Creates the org-scoped DB + Redis session pair used by register and login.
 const createOrgSession = async ({
   req,
   userId,
@@ -211,6 +222,59 @@ const createOrgSession = async ({
   return { sessionToken };
 };
 
+// Loads the org callback allowlist and validates the requested callback target.
+const validateOrgCallbackUrl = async (orgId: string, callbackUrl: string) => {
+  const organization = await prisma.organization.findUnique({
+    where: { id: orgId },
+    select: {
+      appCallbackUrl: true,
+    },
+  });
+  if (!organization) {
+    return {
+      success: false as const,
+      statusCode: StatusCodes.NOT_FOUND,
+      message: 'Organization not found',
+    };
+  }
+
+  if (!isAllowedOrgCallbackUrl(callbackUrl, organization.appCallbackUrl)) {
+    return {
+      success: false as const,
+      statusCode: StatusCodes.BAD_REQUEST,
+      message: 'Callback URL is not allowed.',
+    };
+  }
+
+  return {
+    success: true as const,
+  };
+};
+
+// Deletes every session for a user inside one organization from both DB and Redis.
+const deleteOrgSessions = async (userId: string, orgId: string) => {
+  const sessions = await prisma.session.findMany({
+    where: {
+      userId,
+      organizationId: orgId,
+    },
+    select: {
+      token: true,
+    },
+  });
+
+  await prisma.session.deleteMany({
+    where: {
+      userId,
+      organizationId: orgId,
+    },
+  });
+
+  await Promise.all(
+    sessions.map((session) => deleteAuthSessionFromRedis({ token: session.token })),
+  );
+};
+
 /**
  * @description The registration flow for an organization user.
  * @returns either a success response or an error response or rediract.
@@ -242,20 +306,9 @@ export const orgRegister = async (req: Request, res: Response, next: NextFunctio
       });
     }
 
-    const organization = await prisma.organization.findUnique({
-      where: { id: orgId },
-      select: {
-        appCallbackUrl: true,
-      },
-    });
-    if (!organization) {
-      return ErrorResponse(res, StatusCodes.NOT_FOUND, 'Organization not found');
-    }
-
-    if (
-      !isAllowedOrgCallbackUrl(validatedQuery.data.callbackUrl, organization.appCallbackUrl)
-    ) {
-      return ErrorResponse(res, StatusCodes.BAD_REQUEST, 'Callback URL is not allowed.');
+    const callbackValidation = await validateOrgCallbackUrl(orgId, validatedQuery.data.callbackUrl);
+    if (!callbackValidation.success) {
+      return ErrorResponse(res, callbackValidation.statusCode, callbackValidation.message);
     }
 
     const existingUser = await prisma.user.findUnique({
@@ -402,6 +455,109 @@ export const orgRegister = async (req: Request, res: Response, next: NextFunctio
 };
 
 /**
+ * @description Authenticates an existing LOCAL org user and redirects them to the app callback URL.
+ * */
+export const orgLogin = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    logger.info('Org login auth route hit');
+
+    const orgId = req.org.id;
+    if (!orgId) {
+      return ErrorResponse(
+        res,
+        StatusCodes.BAD_REQUEST,
+        'Organization not found in request context.',
+      );
+    }
+
+    const validatedQuery = orgUserAuthCallbackUrlQuerySchema.safeParse(req.query);
+    if (!validatedQuery.success) {
+      return ErrorResponse(res, StatusCodes.BAD_REQUEST, 'Invalid request query', {
+        issues: formatZodIssues(validatedQuery.error.issues),
+      });
+    }
+
+    const validatedBody = orgUserLoginSchema.safeParse(req.body);
+    if (!validatedBody.success) {
+      return ErrorResponse(res, StatusCodes.BAD_REQUEST, 'Invalid request body', {
+        issues: formatZodIssues(validatedBody.error.issues),
+      });
+    }
+
+    const callbackValidation = await validateOrgCallbackUrl(orgId, validatedQuery.data.callbackUrl);
+    if (!callbackValidation.success) {
+      return ErrorResponse(res, callbackValidation.statusCode, callbackValidation.message);
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: validatedBody.data.email },
+    });
+    if (!user) {
+      return ErrorResponse(res, StatusCodes.NOT_FOUND, 'User not found');
+    }
+
+    if (!user.emailVerified) {
+      return ErrorResponse(res, StatusCodes.FORBIDDEN, 'Email not verified');
+    }
+
+    const account = await prisma.account.findFirst({
+      where: {
+        userId: user.id,
+        provider: 'LOCAL',
+        providerType: 'CREDENTIAL',
+      },
+    });
+    if (!account || account.hashedPassword === null) {
+      return ErrorResponse(res, StatusCodes.BAD_REQUEST, 'Wrong authentication method');
+    }
+
+    const membership = await prisma.membership.findUnique({
+      where: {
+        userId_organizationId: {
+          userId: user.id,
+          organizationId: orgId,
+        },
+      },
+    });
+    if (!membership || membership.isBanned) {
+      return ErrorResponse(
+        res,
+        StatusCodes.FORBIDDEN,
+        'You are not allowed to access this organization.',
+      );
+    }
+
+    const isPasswordCorrect = verifyPassword(validatedBody.data.password, account.hashedPassword);
+    if (!isPasswordCorrect) {
+      return ErrorResponse(res, StatusCodes.UNAUTHORIZED, 'Invalid credentials');
+    }
+
+    await deleteOrgSessions(user.id, orgId);
+
+    const { sessionToken } = await createOrgSession({
+      req,
+      userId: user.id,
+      emailVerified: user.emailVerified,
+      accountId: account.id,
+      provider: 'LOCAL',
+      providerType: 'CREDENTIAL',
+      accountProviderId: account.accountId,
+    });
+
+    setSessionCookie(res, sessionToken);
+
+    const callbackUrlWithToken = buildCallbackUrlWithToken(
+      validatedQuery.data.callbackUrl,
+      sessionToken,
+    );
+
+    return res.redirect(callbackUrlWithToken.toString());
+  } catch (e) {
+    next(e);
+  }
+};
+
+/**
  * @description Verifies an organization user's email and redirects them to the stored callback URL.
  * */
 export const orgVerifyEmail = async (req: Request, res: Response, next: NextFunction) => {
@@ -496,6 +652,33 @@ export const orgVerifyEmail = async (req: Request, res: Response, next: NextFunc
 
     await deleteOrgUserCallbackUrlFromRedis(user.id);
     return res.redirect(callbackUrl);
+  } catch (e) {
+    next(e);
+  }
+};
+
+/**
+ * @description Logs out the authenticated org user by removing their org-scoped sessions.
+ * */
+export const orgLogout = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    logger.info('Org logout auth route hit');
+
+    const orgId = req.org.id;
+    if (!orgId) {
+      return ErrorResponse(
+        res,
+        StatusCodes.BAD_REQUEST,
+        'Organization not found in request context.',
+      );
+    }
+
+    await deleteOrgSessions(req.user.id, orgId);
+    await deleteOrgUserCallbackUrlFromRedis(req.user.id);
+
+    res.clearCookie(SESSION_TOKEN_COOKIE_NAME);
+
+    return OKResponse(res, StatusCodes.OK, 'User logged out successfully');
   } catch (e) {
     next(e);
   }
