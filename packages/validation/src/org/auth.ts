@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
-export const orgUserAuthCallbackUrlParamSchema = z.object({
-  callbackUrl: z.string({ error: 'Callback URL is required' }),
+export const orgUserAuthCallbackUrlQuerySchema = z.object({
+  callbackUrl: z.url({ error: 'Callback URL is required' }),
 });
 
 export const orgUserRegisterSchema = z.object({
@@ -42,6 +42,6 @@ export const orgUserVerifyEmailSchema = z
 export type OrgUserRegisterSchemaType = z.infer<typeof orgUserRegisterSchema>;
 export type OrgUserLoginSchemaType = z.infer<typeof orgUserLoginSchema>;
 export type OrgUserVerifyEmailSchemaType = z.infer<typeof orgUserVerifyEmailSchema>;
-export type OrgUserAuthCallbackUrlParamSchemaType = z.infer<
-  typeof orgUserAuthCallbackUrlParamSchema
+export type OrgUserAuthCallbackUrlQuerySchemaType = z.infer<
+  typeof orgUserAuthCallbackUrlQuerySchema
 >;
