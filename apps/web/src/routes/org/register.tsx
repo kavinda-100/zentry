@@ -18,10 +18,7 @@ import { Input } from '@/components/ui/input';
 import { z } from 'zod';
 import { useOrgUserRegister } from '#/hooks/org/auth/useOrgUserRegister.ts';
 import { toast } from 'sonner';
-import {
-  buildCallbackUrlWithCode,
-  storeOrgVerificationFlow,
-} from '#/hooks/auth/authentication.ts';
+import { buildCallbackUrlWithCode, storeOrgVerificationFlow } from '#/hooks/auth/authentication.ts';
 
 export const Route = createFileRoute('/org/register')({
   ssr: false,
@@ -35,6 +32,7 @@ export const Route = createFileRoute('/org/register')({
 
 function RouteComponent() {
   const { callbackUrl, orgId, state } = Route.useSearch();
+  console.log(callbackUrl, orgId, state);
 
   if (!orgId || !callbackUrl || !state) {
     return (
@@ -63,12 +61,12 @@ function RouteComponent() {
 
   function onSubmit(inputs: OrgUserRegisterSchemaType) {
     mutate(
-        {
-          orgId: orgId!,
-          callbackUrl: callbackUrl!,
-          state: state!,
-          data: inputs,
-        },
+      {
+        orgId: orgId!,
+        callbackUrl: callbackUrl!,
+        state: state!,
+        data: inputs,
+      },
       {
         onSuccess: async (data) => {
           toast.success('Account created successfully!');

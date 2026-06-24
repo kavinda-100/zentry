@@ -17,7 +17,7 @@ export function useOrgUserLogIn() {
     mutationFn: async (props: OrgUserLogInProps) => {
       const { orgId, callbackUrl, state, data } = props;
       const response = await apiWithOrg.post(
-        `/org/login?callbackUrl=${encodeURIComponent(callbackUrl)}&state=${encodeURIComponent(state)}`,
+        `/auth/org/login?callbackUrl=${encodeURIComponent(callbackUrl)}&state=${encodeURIComponent(state)}`,
         data,
         {
           headers: {
