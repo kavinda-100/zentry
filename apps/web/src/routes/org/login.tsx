@@ -17,21 +17,25 @@ import { Input } from '@/components/ui/input';
 import { z } from 'zod';
 import { useOrgUserLogIn } from '#/hooks/org/auth/useOrgUserLogIn.ts';
 import { toast } from 'sonner';
-import { buildCallbackUrlWithToken, storeSessionToken } from '#/hooks/auth/authentication.ts';
+import {
+  buildCallbackUrlWithCode,
+  storeOrgVerificationFlow,
+} from '#/hooks/auth/authentication.ts';
 
 export const Route = createFileRoute('/org/login')({
   ssr: false,
   validateSearch: z.object({
     callbackUrl: z.string().optional(),
     orgId: z.string().optional(),
+    state: z.string().optional(),
   }),
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  const { callbackUrl, orgId } = Route.useSearch();
+  const { callbackUrl, orgId, state } = Route.useSearch();
 
-  if (!orgId || !callbackUrl) {
+  if (!orgId || !callbackUrl || !state) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <p className="text-center text-sm text-muted-foreground">
@@ -55,36 +59,34 @@ function RouteComponent() {
 
   function onSubmit(inputs: OrgUserLoginSchemaType) {
     mutate(
-      {
-        orgId: orgId!,
-        callbackUrl: callbackUrl!,
-        data: inputs,
-      },
+        {
+          orgId: orgId!,
+          callbackUrl: callbackUrl!,
+          state: state!,
+          data: inputs,
+        },
       {
         onSuccess: async (data) => {
-          storeSessionToken(data.data.session.token);
-          toast.success('Account created successfully!');
-          // await 2 seconds to show the toast
+          toast.success('Signed in successfully!');
           await new Promise((resolve) => setTimeout(resolve, 2000));
 
-          if (data.data.verificationRequired) {
+          if (data.data.status === 'PENDING_EMAIL_VERIFICATION') {
+            storeOrgVerificationFlow(data.data.verificationFlowId);
             await navigate({
               to: '/org/verify-email',
               search: {
-                email: inputs.email,
+                email: data.data.email,
                 orgId: orgId!,
-                token: data.data.session.token,
                 callbackUrl: data.data.callbackUrl,
+                state: data.data.state,
               },
             });
             return;
           }
 
-          if (data.data.shouldRedirect) {
-            window.location.assign(
-              buildCallbackUrlWithToken(data.data.callbackUrl, data.data.session.token),
-            );
-          }
+          window.location.assign(
+            buildCallbackUrlWithCode(data.data.callbackUrl, data.data.code, data.data.state),
+          );
         },
         onError: (error) => {
           console.error('Error logging in org user:', error);
@@ -166,7 +168,7 @@ function RouteComponent() {
           Don&apos;t have an account?{' '}
           <Link
             to="/org/register"
-            search={{ callbackUrl, orgId }}
+            search={{ callbackUrl, orgId, state }}
             className="font-medium text-foreground underline underline-offset-4"
           >
             Register here

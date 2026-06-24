@@ -8,15 +8,16 @@ import { ORG_ID_HEADER } from '#/constants';
 type OrgUserRegisterProps = {
   orgId: string;
   callbackUrl: string;
+  state: string;
   data: OrgUserRegisterSchemaType;
 };
 
 export function useOrgUserRegister() {
   const { mutate, isPending } = useMutation({
     mutationFn: async (props: OrgUserRegisterProps) => {
-      const { orgId, callbackUrl, data } = props;
+      const { orgId, callbackUrl, state, data } = props;
       const response = await apiWithOrg.post(
-        `/org/register?callbackUrl=${encodeURIComponent(callbackUrl)}`,
+        `/org/register?callbackUrl=${encodeURIComponent(callbackUrl)}&state=${encodeURIComponent(state)}`,
         data,
         {
           headers: {
@@ -24,9 +25,6 @@ export function useOrgUserRegister() {
           },
         },
       );
-      console.log(response.data);
-
-      // validate the response
       const validator = createOkResponseSchema(orgUserAuthFlowResponseSchema);
       const validatedData = validator.safeParse(response.data);
       if (!validatedData.success) {

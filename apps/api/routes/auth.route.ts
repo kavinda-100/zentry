@@ -16,6 +16,7 @@ import {
 } from '../controllers/auth/standard/google.oauth.controller';
 import { resolveOrgContext, requireOrgMembership } from '../middleware/org';
 import {
+  orgExchangeCode,
   getOrgMe,
   orgLogin,
   orgLogout,
@@ -59,6 +60,8 @@ router.get('/providers/google/callback', standardRateLimiter, googleOauthCallbac
 router.post('/org/register', strictRateLimiter, resolveOrgContext, orgRegister);
 // POST https://localhost:5000/api/v1/auth/org/login
 router.post('/org/login', strictRateLimiter, resolveOrgContext, orgLogin);
+// POST https://localhost:5000/api/v1/auth/org/exchange
+router.post('/org/exchange', strictRateLimiter, resolveOrgContext, orgExchangeCode);
 // POST https://localhost:5000/api/v1/auth/org/logout
 router.post(
   '/org/logout',
@@ -69,14 +72,7 @@ router.post(
   orgLogout,
 );
 // POST https://localhost:5000/api/v1/auth/org/verify-email
-router.post(
-  '/org/verify-email',
-  strictRateLimiter,
-  resolveOrgContext,
-  requireAuthenticatedSession,
-  requireOrgMembership,
-  orgVerifyEmail,
-);
+router.post('/org/verify-email', strictRateLimiter, resolveOrgContext, orgVerifyEmail);
 // GET https://localhost:5000/api/v1/auth/org/me
 router.get(
   '/org/me',

@@ -37,3 +37,11 @@ export const ORG_ID_HEADER: string = 'X-Zentry-Org-ID';
  * @default 'X-Zentry-API-Key'
  * */
 export const API_KEY_HEADER: string = 'X-Zentry-API-Key';
+
+/**
+ * @description Name of the session storage key used for the pending auth state during redirects.
+ * @constant PENDING_AUTH_STATE
+ * @type {string}
+ * @default 'zentry_pending_auth_state'
+ * */
+export const PENDING_AUTH_STATE: string = 'zentry_pending_auth_state';

@@ -3,17 +3,40 @@ import { prisma } from '@zentry/database';
 import { ErrorResponse } from '../../utils/responseHandles';
 import { StatusCodes } from '../../utils/statusCodes';
 import { hashApiKey } from '../../utils/crypto';
+import { timingSafeEqual } from 'node:crypto';
+
+const ORG_ID_HEADER = 'X-Zentry-Org-ID';
+const API_KEY_HEADER = 'X-Zentry-API-Key';
+
+/**
+ * @description Validates the supplied organization API key against the stored prefix and hash.
+ */
+const hasValidOrgApiKey = (apiKey: string, org: { apiKeyHash: string; apiKeyPrefix: string }) => {
+  if (!apiKey.startsWith(org.apiKeyPrefix)) {
+    return false;
+  }
+
+  const hashedApiKey = hashApiKey(apiKey);
+  const expected = Buffer.from(org.apiKeyHash, 'utf8');
+  const actual = Buffer.from(hashedApiKey, 'utf8');
+
+  if (expected.length !== actual.length) {
+    return false;
+  }
+
+  return timingSafeEqual(expected, actual);
+};
 
 export const resolveOrgContext: RequestHandler = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
-  const orgId = req.header('X-Zentry-Org-ID')?.trim();
-  const apiKey = req.header('X-Zentry-API-Key')?.trim();
+  const orgId = req.header(ORG_ID_HEADER)?.trim();
+  const apiKey = req.header(API_KEY_HEADER)?.trim();
 
   if (!orgId) {
-    ErrorResponse(res, StatusCodes.BAD_REQUEST, 'X-Zentry-Org-ID is required.');
+    ErrorResponse(res, StatusCodes.BAD_REQUEST, `${ORG_ID_HEADER} is required.`);
     return;
   }
 
@@ -24,6 +47,7 @@ export const resolveOrgContext: RequestHandler = async (
       name: true,
       rootAdminId: true,
       apiKeyHash: true,
+      apiKeyPrefix: true,
       appHomeUrl: true,
       appCallbackUrl: true,
     },
@@ -34,7 +58,7 @@ export const resolveOrgContext: RequestHandler = async (
     return;
   }
 
-  if (apiKey && hashApiKey(apiKey) !== org.apiKeyHash) {
+  if (apiKey && !hasValidOrgApiKey(apiKey, org)) {
     ErrorResponse(res, StatusCodes.UNAUTHORIZED, 'Invalid organization API key.');
     return;
   }

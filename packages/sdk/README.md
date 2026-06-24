@@ -20,9 +20,10 @@ For a request to be treated as an authenticated user request inside an organizat
 
 1. the frontend authenticates the user with Zentry
 2. Zentry issues a user session token
-3. the frontend stores that token in `localStorage`
-4. the frontend sends the token on requests to the developer's backend API
-5. the backend validates that user token against Zentry using:
+3. after callback, the frontend exchanges a short-lived code for the real token
+4. the frontend stores that final token in `localStorage`
+5. the frontend sends the token on requests to the developer's backend API
+6. the backend validates that user token against Zentry using:
    - the forwarded user token
    - the organization's `orgId`
    - the organization's secret `apiKey`
@@ -69,7 +70,7 @@ Use the React SDK in your frontend application to:
 - redirect users to Zentry login/register
 - sync the current session from Zentry
 - access the authenticated session in React
-- capture the callback token returned by Zentry
+- capture the callback code returned by Zentry and exchange it safely
 - use built-in unstyled auth components if you do not want to wire the buttons yourself
 
 ### Required frontend env
@@ -356,12 +357,13 @@ export function Profile() {
 }
 ```
 
-### Capture the callback token
+### Capture the callback code
 
-When Zentry redirects back to your app, the token is returned in the URL. Use `useZentryCallbackSync()` on the callback page to:
+When Zentry redirects back to your app, a short-lived `code` and `state` are returned in the URL. Use `useZentryCallbackSync()` on the callback page to:
 
-- read the token from the query string
-- store it in `localStorage`
+- validate the returned state
+- exchange the code for the real token
+- store the final token in `localStorage`
 - clear it from the URL
 - reload the app so session sync runs again
 
@@ -527,8 +529,8 @@ In the current version it does not perform a remote org verification request by 
 1. frontend renders inside `ZentryProvider`
 2. user clicks `login()` or `register()`
 3. user is redirected to the Zentry UI
-4. after success, Zentry redirects back to the app callback URL with a token
-5. callback page stores that token in `localStorage`
+4. after success, Zentry redirects back to the app callback URL with a short-lived code and state
+5. callback page exchanges that code and stores the final token in `localStorage`
 6. the provider calls Zentry to fetch the full session in `ZentrySessionType` shape
 7. React code uses `useZentry()` to read auth state
 
@@ -572,7 +574,7 @@ Use:
 - `@zentry-org/sdk/react-server` for server-side React helpers
 - `@zentry-org/sdk/node` in the backend API
 
-The UI owns login and token capture.
+The UI owns login, callback code exchange, and token storage.
 
 The backend owns secure user validation against Zentry.
 

@@ -17,15 +17,19 @@ import { Input } from '@/components/ui/input';
 import { useEffect, useState } from 'react';
 import { useOrgUserEmailVerify } from '#/hooks/org/auth/useOrgUserEmailVerify.ts';
 import { toast } from 'sonner';
-import { buildCallbackUrlWithToken, storeSessionToken } from '#/hooks/auth/authentication.ts';
+import {
+  buildCallbackUrlWithCode,
+  clearStoredOrgVerificationFlow,
+  getStoredOrgVerificationFlow,
+} from '#/hooks/auth/authentication.ts';
 
 export const Route = createFileRoute('/org/verify-email')({
   ssr: false,
   validateSearch: z.object({
     email: z.email(),
     orgId: z.string(),
-    token: z.string(),
     callbackUrl: z.string(),
+    state: z.string(),
   }),
   component: RouteComponent,
 });
@@ -34,8 +38,9 @@ function RouteComponent() {
   const [count, setCount] = useState(10 * 60 * 1000);
   const search = Route.useSearch();
   const { mutate } = useOrgUserEmailVerify();
+  const verificationFlowId = getStoredOrgVerificationFlow();
 
-  if (!search.orgId || !search.token || !search.callbackUrl) {
+  if (!search.orgId || !search.callbackUrl || !search.state || !verificationFlowId) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <p className="text-center text-sm text-muted-foreground">
@@ -45,10 +50,13 @@ function RouteComponent() {
     );
   }
 
+  const activeVerificationFlowId = verificationFlowId;
+
   const formId = 'org-verify-email-form';
   const form = useForm<OrgUserVerifyEmailSchemaType>({
     resolver: standardSchemaResolver(orgUserVerifyEmailSchema),
     defaultValues: {
+      verificationFlowId: activeVerificationFlowId,
       email: search.email ?? '',
       otp: '',
     },
@@ -59,17 +67,23 @@ function RouteComponent() {
       {
         orgId: search.orgId,
         callbackUrl: search.callbackUrl,
-        data: inputs,
+        state: search.state,
+        data: {
+          ...inputs,
+          verificationFlowId: activeVerificationFlowId,
+        },
       },
       {
         onSuccess: (data) => {
-          storeSessionToken(data.data.session.token);
-
-          if (data.data.shouldRedirect) {
-            window.location.assign(
-              buildCallbackUrlWithToken(data.data.callbackUrl, data.data.session.token),
-            );
+          if (data.data.status !== 'READY_FOR_REDIRECT') {
+            toast.error('Verification did not complete. Please try again.');
+            return;
           }
+
+          clearStoredOrgVerificationFlow();
+          window.location.assign(
+            buildCallbackUrlWithCode(data.data.callbackUrl, data.data.code, data.data.state),
+          );
         },
         onError: (error) => {
           console.error('Error verifying org user email:', error);
@@ -78,10 +92,6 @@ function RouteComponent() {
       },
     );
   }
-
-  useEffect(() => {
-    storeSessionToken(search.token);
-  }, [search.token]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -150,6 +160,7 @@ function RouteComponent() {
             variant="outline"
             onClick={() =>
               form.reset({
+                verificationFlowId: activeVerificationFlowId,
                 email: search.email ?? '',
                 otp: '',
               })
@@ -187,7 +198,7 @@ function RouteComponent() {
           Need to go back?{' '}
           <Link
             to="/org/login"
-            search={{ callbackUrl: search.callbackUrl, orgId: search.orgId }}
+            search={{ callbackUrl: search.callbackUrl, orgId: search.orgId, state: search.state }}
             className="font-medium text-foreground underline underline-offset-4"
           >
             Return to login

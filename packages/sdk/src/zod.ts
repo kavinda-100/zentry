@@ -50,4 +50,15 @@ export const ZentrySessionSchema = z.object({
   }),
 });
 
+export const orgAuthExchangeResponseSchema = z.object({
+  session: z.object({
+    token: z.string().min(1),
+  }),
+});
+
+export const orgSdkCallbackQuerySchema = z.object({
+  code: z.string().min(1),
+  state: z.string().min(16),
+});
+
 export type ZentrySessionType = z.infer<typeof ZentrySessionSchema>;

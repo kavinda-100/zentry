@@ -1,31 +1,43 @@
-import type { Request, Response, NextFunction } from 'express';
-import { logger } from '../../../utils/logger';
-import { ErrorResponse, OKResponse } from '../../../utils/responseHandles';
-import { StatusCodes } from '../../../utils/statusCodes';
+import type { NextFunction, Request, Response } from 'express';
+import { randomUUID } from 'node:crypto';
 import { prisma } from '@zentry/database';
 import {
   formatZodIssues,
+  orgAuthExchangeSchema,
   orgUserAuthCallbackUrlQuerySchema,
   orgUserLoginSchema,
   orgUserRegisterSchema,
   orgUserVerifyEmailSchema,
 } from '@zentry/validation';
+import type { AuthProviderEnumType, ProviderEnumType } from '@zentry/validation/src/auth';
+import { logger } from '../../../utils/logger';
+import { ErrorResponse, OKResponse } from '../../../utils/responseHandles';
+import { StatusCodes } from '../../../utils/statusCodes';
 import {
   generateOtp,
   generateSessionToken,
   hashPassword,
   verifyPassword,
 } from '../../../utils/crypto';
-import { DEFAULT_SESSION_EXPIRY_IN_SECONDS, SESSION_TOKEN_COOKIE_NAME } from '../../../constants';
+import { DEFAULT_SESSION_EXPIRY_IN_SECONDS } from '../../../constants';
 import {
   createAuthSessionInTheRedis,
   deleteAuthSessionFromRedis,
-  updateAuthSessionInRedis,
   type createSessionInTheRedisProps,
 } from '../../../lib/redis/auth.redis';
+import {
+  createAuthCodeGrantInRedis,
+  createVerificationFlowInRedis,
+  consumeAuthCodeGrantFromRedis,
+  deleteVerificationFlowFromRedis,
+  getVerificationFlowFromRedis,
+} from '../../../lib/redis/org-auth-flow.redis';
 import { publishAuthEvent } from '../../../lib/kafka';
 
-type createSessionProps = {
+const EMAIL_VERIFICATION_EXPIRY_IN_SECONDS = 10 * 60;
+const AUTH_CODE_EXPIRY_IN_SECONDS = 60;
+
+type CreateSessionProps = {
   userId: string;
   orgId: string;
   permissions: string[];
@@ -34,11 +46,21 @@ type createSessionProps = {
   expiresInSeconds?: Date;
 };
 
-// Persists an org-scoped session row and returns the opaque client token.
-const createSessionInDb = async (props: createSessionProps) => {
+type SessionActorDetails = {
+  userId: string;
+  emailVerified: boolean;
+  accountId: string;
+  provider: AuthProviderEnumType;
+  providerType: ProviderEnumType;
+  accountProviderId: string;
+};
+
+/**
+ * @description Persists an org-scoped session row and returns the opaque client token.
+ */
+const createSessionInDb = async (props: CreateSessionProps) => {
   const sessionToken = generateSessionToken();
 
-  // save the session in the database
   logger.info('Creating session in the database.');
   const dbSessionRecord = await prisma.session.create({
     data: {
@@ -52,13 +74,16 @@ const createSessionInDb = async (props: createSessionProps) => {
       userAgent: props.userAgent || 'unknown',
     },
   });
+
   return { sessionToken, dbSessionRecord };
 };
 
-// Mirrors the org-scoped session snapshot into Redis for request-time auth checks.
+/**
+ * @description Mirrors the org-scoped session snapshot into Redis for request-time auth checks.
+ */
 const createSessionInRedis = async (props: createSessionInTheRedisProps) => {
   logger.info('Creating session in the Redis cache.');
-  // save the session in the Redis cache
+
   await createAuthSessionInTheRedis({
     token: props.token,
     expiresInSeconds: props.expiresInSeconds ?? DEFAULT_SESSION_EXPIRY_IN_SECONDS,
@@ -85,41 +110,48 @@ const createSessionInRedis = async (props: createSessionInTheRedisProps) => {
   });
 };
 
-// Applies the standard session cookie so browser clients can authenticate follow-up requests.
-const setSessionCookie = (res: Response, sessionToken: string) => {
-  res.cookie(SESSION_TOKEN_COOKIE_NAME, sessionToken, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: DEFAULT_SESSION_EXPIRY_IN_SECONDS * 1000,
-  });
-};
-
-// Enforces that redirects only go to URLs registered on the organization.
+/**
+ * @description Enforces that redirects only go to URLs registered on the organization.
+ */
 const isAllowedOrgCallbackUrl = (callbackUrl: string, allowedCallbackUrls: string[]) => {
   return allowedCallbackUrls.includes(callbackUrl);
 };
 
-// response builder for the org auth flow.
-// This response patten is expected in the UI `org/register` and `org/login` pages.`
-const buildOrgAuthFlowResponse = ({
-  callbackUrl,
-  sessionToken,
-  verificationRequired,
-}: {
-  callbackUrl: string;
-  sessionToken: string;
-  verificationRequired: boolean;
-}) => ({
-  session: {
-    token: sessionToken,
-  },
-  verificationRequired,
-  shouldRedirect: !verificationRequired,
-  callbackUrl,
-});
+/**
+ * @description Loads the org callback allowlist and validates the requested callback target.
+ */
+const validateOrgCallbackUrl = async (orgId: string, callbackUrl: string) => {
+  const organization = await prisma.organization.findUnique({
+    where: { id: orgId },
+    select: {
+      appCallbackUrl: true,
+    },
+  });
 
-// utility function to generate OTP, save it to the database and send a Kafka message to trigger email sending in the email service.
+  if (!organization) {
+    return {
+      success: false as const,
+      statusCode: StatusCodes.NOT_FOUND,
+      message: 'Organization not found',
+    };
+  }
+
+  if (!isAllowedOrgCallbackUrl(callbackUrl, organization.appCallbackUrl)) {
+    return {
+      success: false as const,
+      statusCode: StatusCodes.BAD_REQUEST,
+      message: 'Callback URL is not allowed.',
+    };
+  }
+
+  return {
+    success: true as const,
+  };
+};
+
+/**
+ * @description Sends and persists a fresh email verification OTP for the user.
+ */
 const generateSaveAndSendmailVerification = async ({
   userId,
   email,
@@ -143,106 +175,24 @@ const generateSaveAndSendmailVerification = async ({
         userId,
         code: otp,
         purpose: 'EMAIL_VERIFICATION',
-        expiresAt: new Date(Date.now() + 10 * 60 * 1000), // OTP expires in 10 minutes
+        expiresAt: new Date(Date.now() + EMAIL_VERIFICATION_EXPIRY_IN_SECONDS * 1000),
       },
     });
   });
 
-  // send Kafka message to send email verification
   await publishAuthEvent({
     type: 'EMAIL_VERIFICATION',
-    userId: userId,
+    userId,
     payload: {
-      otp: otp,
+      otp,
       to: email,
     },
   });
 };
 
-// Creates the org-scoped DB + Redis session pair used by register and login.
-const createOrgSession = async ({
-  req,
-  userId,
-  emailVerified,
-  accountId,
-  provider,
-  providerType,
-  accountProviderId,
-}: {
-  req: Request;
-  userId: string;
-  emailVerified: boolean;
-  accountId: string;
-  provider: 'LOCAL';
-  providerType: 'CREDENTIAL';
-  accountProviderId: string;
-}) => {
-  const { sessionToken, dbSessionRecord } = await createSessionInDb({
-    orgId: req.org.id!,
-    userId,
-    permissions: [],
-    ipAddress: req.ip,
-    userAgent: req.headers['user-agent'],
-  });
-
-  await createSessionInRedis({
-    token: sessionToken,
-    sessionObject: {
-      sessionId: dbSessionRecord.id,
-      ipAddress: req.ip,
-      user: {
-        id: userId,
-        emailVerified,
-      },
-      org: {
-        id: req.org.id!,
-        permissions: JSON.stringify([]),
-        isBanned: false,
-        role: 'MEMBER',
-      },
-      account: {
-        id: accountId,
-        userId,
-        accountId: accountProviderId,
-        provider,
-        providerType,
-      },
-    },
-  });
-
-  return { sessionToken };
-};
-
-// Loads the org callback allowlist and validates the requested callback target.
-const validateOrgCallbackUrl = async (orgId: string, callbackUrl: string) => {
-  const organization = await prisma.organization.findUnique({
-    where: { id: orgId },
-    select: {
-      appCallbackUrl: true,
-    },
-  });
-  if (!organization) {
-    return {
-      success: false as const,
-      statusCode: StatusCodes.NOT_FOUND,
-      message: 'Organization not found',
-    };
-  }
-
-  if (!isAllowedOrgCallbackUrl(callbackUrl, organization.appCallbackUrl)) {
-    return {
-      success: false as const,
-      statusCode: StatusCodes.BAD_REQUEST,
-      message: 'Callback URL is not allowed.',
-    };
-  }
-
-  return {
-    success: true as const,
-  };
-};
-
-// Deletes every session for a user inside one organization from both DB and Redis.
+/**
+ * @description Deletes every session for a user inside one organization from both DB and Redis.
+ */
 const deleteOrgSessions = async (userId: string, orgId: string) => {
   const sessions = await prisma.session.findMany({
     where: {
@@ -267,27 +217,290 @@ const deleteOrgSessions = async (userId: string, orgId: string) => {
 };
 
 /**
+ * @description Creates the final organization session only after the auth code exchange succeeds.
+ */
+const createOrgSession = async ({ req, actor }: { req: Request; actor: SessionActorDetails }) => {
+  const { sessionToken, dbSessionRecord } = await createSessionInDb({
+    orgId: req.org.id!,
+    userId: actor.userId,
+    permissions: [],
+    ipAddress: req.ip,
+    userAgent: req.headers['user-agent'],
+  });
+
+  await createSessionInRedis({
+    token: sessionToken,
+    sessionObject: {
+      sessionId: dbSessionRecord.id,
+      ipAddress: req.ip,
+      user: {
+        id: actor.userId,
+        emailVerified: actor.emailVerified,
+      },
+      org: {
+        id: req.org.id!,
+        permissions: JSON.stringify([]),
+        isBanned: false,
+        role: 'MEMBER',
+      },
+      account: {
+        id: actor.accountId,
+        userId: actor.userId,
+        accountId: actor.accountProviderId,
+        provider: actor.provider,
+        providerType: actor.providerType,
+      },
+    },
+  });
+
+  return { sessionToken };
+};
+
+/**
+ * @description Shapes the response for users who must complete email verification first.
+ */
+const buildPendingVerificationResponse = ({
+  verificationFlowId,
+  email,
+  callbackUrl,
+  state,
+  expiresAt,
+}: {
+  verificationFlowId: string;
+  email: string;
+  callbackUrl: string;
+  state: string;
+  expiresAt: Date;
+}) => ({
+  status: 'PENDING_EMAIL_VERIFICATION' as const,
+  verificationFlowId,
+  email,
+  callbackUrl,
+  state,
+  expiresAt: expiresAt.toISOString(),
+});
+
+/**
+ * @description Shapes the redirect response with a one-time code instead of a session token.
+ */
+const buildReadyForRedirectResponse = ({
+  code,
+  callbackUrl,
+  state,
+  expiresAt,
+}: {
+  code: string;
+  callbackUrl: string;
+  state: string;
+  expiresAt: Date;
+}) => ({
+  status: 'READY_FOR_REDIRECT' as const,
+  code,
+  callbackUrl,
+  state,
+  expiresAt: expiresAt.toISOString(),
+});
+
+/**
+ * @description Creates a temporary verification flow for unverified organization users.
+ */
+const createPendingVerificationResponse = async ({
+  userId,
+  orgId,
+  email,
+  callbackUrl,
+  state,
+}: {
+  userId: string;
+  orgId: string;
+  email: string;
+  callbackUrl: string;
+  state: string;
+}) => {
+  const verificationFlowId = randomUUID();
+  const expiresAt = new Date(Date.now() + EMAIL_VERIFICATION_EXPIRY_IN_SECONDS * 1000);
+
+  await createVerificationFlowInRedis({
+    verificationFlowId,
+    expiresInSeconds: EMAIL_VERIFICATION_EXPIRY_IN_SECONDS,
+    record: {
+      userId,
+      orgId,
+      email,
+      callbackUrl,
+      state,
+      issuedAt: new Date().toISOString(),
+      expiresAt: expiresAt.toISOString(),
+    },
+  });
+
+  return buildPendingVerificationResponse({
+    verificationFlowId,
+    email,
+    callbackUrl,
+    state,
+    expiresAt,
+  });
+};
+
+/**
+ * @description Creates a one-time auth code grant for a verified organization user.
+ */
+const createReadyForRedirectResponse = async ({
+  userId,
+  orgId,
+  callbackUrl,
+  state,
+}: {
+  userId: string;
+  orgId: string;
+  callbackUrl: string;
+  state: string;
+}) => {
+  const expiresAt = new Date(Date.now() + AUTH_CODE_EXPIRY_IN_SECONDS * 1000);
+  const { code } = await createAuthCodeGrantInRedis({
+    expiresInSeconds: AUTH_CODE_EXPIRY_IN_SECONDS,
+    record: {
+      userId,
+      orgId,
+      callbackUrl,
+      state,
+      issuedAt: new Date().toISOString(),
+      expiresAt: expiresAt.toISOString(),
+    },
+  });
+
+  return buildReadyForRedirectResponse({
+    code,
+    callbackUrl,
+    state,
+    expiresAt,
+  });
+};
+
+/**
+ * @description Loads the authenticated user's org-scoped session payload in the shared SDK shape.
+ */
+const getOrgSessionResponseBody = async (userId: string, orgId: string) => {
+  const [user, account, org, membership] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+    }),
+    prisma.account.findFirst({
+      where: { userId },
+      orderBy: { createdAt: 'asc' },
+    }),
+    prisma.organization.findUnique({
+      where: { id: orgId },
+    }),
+    prisma.membership.findUnique({
+      where: {
+        userId_organizationId: {
+          userId,
+          organizationId: orgId,
+        },
+      },
+    }),
+  ]);
+
+  if (!user) {
+    return {
+      success: false as const,
+      statusCode: StatusCodes.NOT_FOUND,
+      message: 'User not found',
+    };
+  }
+
+  if (!account) {
+    return {
+      success: false as const,
+      statusCode: StatusCodes.NOT_FOUND,
+      message: 'Account not found',
+    };
+  }
+
+  if (!org) {
+    return {
+      success: false as const,
+      statusCode: StatusCodes.NOT_FOUND,
+      message: 'Organization not found',
+    };
+  }
+
+  if (!membership || membership.isBanned) {
+    return {
+      success: false as const,
+      statusCode: StatusCodes.FORBIDDEN,
+      message: 'You are not allowed to access this organization.',
+    };
+  }
+
+  return {
+    success: true as const,
+    data: {
+      user: {
+        ...user,
+        createdAt: user.createdAt.toISOString(),
+        updatedAt: user.updatedAt.toISOString(),
+      },
+      org: {
+        id: org.id,
+        name: org.name,
+      },
+      membership: {
+        id: membership.id,
+        role: membership.role,
+        isBanned: membership.isBanned,
+        permissions: membership.permissions,
+      },
+      account: {
+        id: account.id,
+        provider: account.provider,
+        providerType: account.providerType,
+        accountId: account.accountId,
+        providerAvatarUrl: account.providerAvatarUrl,
+      },
+    },
+  };
+};
+
+/**
+ * @description Validates org auth query params and callback allowlist together.
+ */
+const validateOrgAuthRequestQuery = async (req: Request, res: Response) => {
+  const orgId = req.org.id;
+  if (!orgId) {
+    ErrorResponse(res, StatusCodes.BAD_REQUEST, 'Organization not found in request context.');
+    return null;
+  }
+
+  const validatedQuery = orgUserAuthCallbackUrlQuerySchema.safeParse(req.query);
+  if (!validatedQuery.success) {
+    ErrorResponse(res, StatusCodes.BAD_REQUEST, 'Invalid request query', {
+      issues: formatZodIssues(validatedQuery.error.issues),
+    });
+    return null;
+  }
+
+  const callbackValidation = await validateOrgCallbackUrl(orgId, validatedQuery.data.callbackUrl);
+  if (!callbackValidation.success) {
+    ErrorResponse(res, callbackValidation.statusCode, callbackValidation.message);
+    return null;
+  }
+
+  return { orgId, query: validatedQuery.data };
+};
+
+/**
  * @description The registration flow for an organization user.
- * @returns either a success response or an error response.
- * */
+ */
 export const orgRegister = async (req: Request, res: Response, next: NextFunction) => {
   try {
     logger.info('Org register auth route hit');
 
-    const orgId = req.org.id;
-    if (!orgId) {
-      return ErrorResponse(
-        res,
-        StatusCodes.BAD_REQUEST,
-        'Organization not found in request context.',
-      );
-    }
-
-    const validatedQuery = orgUserAuthCallbackUrlQuerySchema.safeParse(req.query);
-    if (!validatedQuery.success) {
-      return ErrorResponse(res, StatusCodes.BAD_REQUEST, 'Invalid request query', {
-        issues: formatZodIssues(validatedQuery.error.issues),
-      });
+    const validatedRequest = await validateOrgAuthRequestQuery(req, res);
+    if (!validatedRequest) {
+      return;
     }
 
     const validatedBody = orgUserRegisterSchema.safeParse(req.body);
@@ -297,11 +510,7 @@ export const orgRegister = async (req: Request, res: Response, next: NextFunctio
       });
     }
 
-    const callbackValidation = await validateOrgCallbackUrl(orgId, validatedQuery.data.callbackUrl);
-    if (!callbackValidation.success) {
-      return ErrorResponse(res, callbackValidation.statusCode, callbackValidation.message);
-    }
-
+    const { orgId, query } = validatedRequest;
     const existingUser = await prisma.user.findUnique({
       where: { email: validatedBody.data.email },
     });
@@ -402,72 +611,51 @@ export const orgRegister = async (req: Request, res: Response, next: NextFunctio
       return ErrorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to prepare org user.');
     }
 
-    const { sessionToken } = await createOrgSession({
-      req,
-      userId: user.id,
-      emailVerified: user.emailVerified,
-      accountId: account.id,
-      provider: 'LOCAL',
-      providerType: 'CREDENTIAL',
-      accountProviderId: account.accountId,
-    });
-
-    setSessionCookie(res, sessionToken);
-
     if (!user.emailVerified) {
       await generateSaveAndSendmailVerification({
         userId: user.id,
         email: user.email,
       });
 
+      const responseBody = await createPendingVerificationResponse({
+        userId: user.id,
+        orgId,
+        email: user.email,
+        callbackUrl: query.callbackUrl,
+        state: query.state,
+      });
+
       return OKResponse(
         res,
         StatusCodes.OK,
         'User registered successfully - email verification pending.',
-        buildOrgAuthFlowResponse({
-          callbackUrl: validatedQuery.data.callbackUrl,
-          sessionToken,
-          verificationRequired: true,
-        }),
+        responseBody,
       );
     }
 
-    return OKResponse(
-      res,
-      StatusCodes.OK,
-      'User registered successfully.',
-      buildOrgAuthFlowResponse({
-        callbackUrl: validatedQuery.data.callbackUrl,
-        sessionToken,
-        verificationRequired: false,
-      }),
-    );
+    const responseBody = await createReadyForRedirectResponse({
+      userId: user.id,
+      orgId,
+      callbackUrl: query.callbackUrl,
+      state: query.state,
+    });
+
+    return OKResponse(res, StatusCodes.OK, 'User registered successfully.', responseBody);
   } catch (e) {
     next(e);
   }
 };
 
 /**
- * @description Authenticates an existing LOCAL org user and returns the client redirect payload.
- * */
+ * @description Authenticates an existing LOCAL org user and starts the secure redirect flow.
+ */
 export const orgLogin = async (req: Request, res: Response, next: NextFunction) => {
   try {
     logger.info('Org login auth route hit');
 
-    const orgId = req.org.id;
-    if (!orgId) {
-      return ErrorResponse(
-        res,
-        StatusCodes.BAD_REQUEST,
-        'Organization not found in request context.',
-      );
-    }
-
-    const validatedQuery = orgUserAuthCallbackUrlQuerySchema.safeParse(req.query);
-    if (!validatedQuery.success) {
-      return ErrorResponse(res, StatusCodes.BAD_REQUEST, 'Invalid request query', {
-        issues: formatZodIssues(validatedQuery.error.issues),
-      });
+    const validatedRequest = await validateOrgAuthRequestQuery(req, res);
+    if (!validatedRequest) {
+      return;
     }
 
     const validatedBody = orgUserLoginSchema.safeParse(req.body);
@@ -477,11 +665,7 @@ export const orgLogin = async (req: Request, res: Response, next: NextFunction) 
       });
     }
 
-    const callbackValidation = await validateOrgCallbackUrl(orgId, validatedQuery.data.callbackUrl);
-    if (!callbackValidation.success) {
-      return ErrorResponse(res, callbackValidation.statusCode, callbackValidation.message);
-    }
-
+    const { orgId, query } = validatedRequest;
     const user = await prisma.user.findUnique({
       where: { email: validatedBody.data.email },
     });
@@ -516,24 +700,13 @@ export const orgLogin = async (req: Request, res: Response, next: NextFunction) 
       );
     }
 
-    const isPasswordCorrect = verifyPassword(validatedBody.data.password, account.hashedPassword);
+    const isPasswordCorrect = await verifyPassword(
+      validatedBody.data.password,
+      account.hashedPassword,
+    );
     if (!isPasswordCorrect) {
       return ErrorResponse(res, StatusCodes.UNAUTHORIZED, 'Invalid credentials');
     }
-
-    await deleteOrgSessions(user.id, orgId);
-
-    const { sessionToken } = await createOrgSession({
-      req,
-      userId: user.id,
-      emailVerified: user.emailVerified,
-      accountId: account.id,
-      provider: 'LOCAL',
-      providerType: 'CREDENTIAL',
-      accountProviderId: account.accountId,
-    });
-
-    setSessionCookie(res, sessionToken);
 
     if (!user.emailVerified) {
       await generateSaveAndSendmailVerification({
@@ -541,54 +714,40 @@ export const orgLogin = async (req: Request, res: Response, next: NextFunction) 
         email: user.email,
       });
 
-      return OKResponse(
-        res,
-        StatusCodes.OK,
-        'Email verification required.',
-        buildOrgAuthFlowResponse({
-          callbackUrl: validatedQuery.data.callbackUrl,
-          sessionToken,
-          verificationRequired: true,
-        }),
-      );
+      const responseBody = await createPendingVerificationResponse({
+        userId: user.id,
+        orgId,
+        email: user.email,
+        callbackUrl: query.callbackUrl,
+        state: query.state,
+      });
+
+      return OKResponse(res, StatusCodes.OK, 'Email verification required.', responseBody);
     }
 
-    return OKResponse(
-      res,
-      StatusCodes.OK,
-      'User logged in successfully.',
-      buildOrgAuthFlowResponse({
-        callbackUrl: validatedQuery.data.callbackUrl,
-        sessionToken,
-        verificationRequired: false,
-      }),
-    );
+    const responseBody = await createReadyForRedirectResponse({
+      userId: user.id,
+      orgId,
+      callbackUrl: query.callbackUrl,
+      state: query.state,
+    });
+
+    return OKResponse(res, StatusCodes.OK, 'User logged in successfully.', responseBody);
   } catch (e) {
     next(e);
   }
 };
 
 /**
- * @description Verifies an organization user's email and returns the client redirect payload.
- * */
+ * @description Verifies an organization user's email via a temporary verification flow.
+ */
 export const orgVerifyEmail = async (req: Request, res: Response, next: NextFunction) => {
   try {
     logger.info('Org verify email auth route hit');
 
-    const orgId = req.org.id;
-    if (!orgId) {
-      return ErrorResponse(
-        res,
-        StatusCodes.BAD_REQUEST,
-        'Organization not found in request context.',
-      );
-    }
-
-    const validatedQuery = orgUserAuthCallbackUrlQuerySchema.safeParse(req.query);
-    if (!validatedQuery.success) {
-      return ErrorResponse(res, StatusCodes.BAD_REQUEST, 'Invalid request query', {
-        issues: formatZodIssues(validatedQuery.error.issues),
-      });
+    const validatedRequest = await validateOrgAuthRequestQuery(req, res);
+    if (!validatedRequest) {
+      return;
     }
 
     const validatedBody = orgUserVerifyEmailSchema.safeParse(req.body);
@@ -598,37 +757,65 @@ export const orgVerifyEmail = async (req: Request, res: Response, next: NextFunc
       });
     }
 
-    const callbackValidation = await validateOrgCallbackUrl(orgId, validatedQuery.data.callbackUrl);
-    if (!callbackValidation.success) {
-      return ErrorResponse(res, callbackValidation.statusCode, callbackValidation.message);
+    const { orgId, query } = validatedRequest;
+    const verificationFlow = await getVerificationFlowFromRedis(
+      validatedBody.data.verificationFlowId,
+    );
+    if (!verificationFlow) {
+      return ErrorResponse(
+        res,
+        StatusCodes.UNAUTHORIZED,
+        'Verification flow not found or already expired.',
+      );
+    }
+
+    if (
+      verificationFlow.orgId !== orgId ||
+      verificationFlow.callbackUrl !== query.callbackUrl ||
+      verificationFlow.state !== query.state ||
+      verificationFlow.email !== validatedBody.data.email
+    ) {
+      return ErrorResponse(res, StatusCodes.FORBIDDEN, 'Verification flow does not match request.');
+    }
+
+    if (new Date(verificationFlow.expiresAt) < new Date()) {
+      await deleteVerificationFlowFromRedis(validatedBody.data.verificationFlowId);
+      return ErrorResponse(res, StatusCodes.BAD_REQUEST, 'Verification flow has expired.');
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
+      where: { id: verificationFlow.userId },
     });
     if (!user) {
       return ErrorResponse(res, StatusCodes.NOT_FOUND, 'User not found');
     }
 
-    if (user.email !== validatedBody.data.email) {
+    const membership = await prisma.membership.findUnique({
+      where: {
+        userId_organizationId: {
+          userId: verificationFlow.userId,
+          organizationId: orgId,
+        },
+      },
+    });
+    if (!membership || membership.isBanned) {
       return ErrorResponse(
         res,
         StatusCodes.FORBIDDEN,
-        'You can only verify the authenticated organization user.',
+        'You are not allowed to access this organization.',
       );
     }
 
     if (user.emailVerified) {
-      return OKResponse(
-        res,
-        StatusCodes.OK,
-        'Email already verified.',
-        buildOrgAuthFlowResponse({
-          callbackUrl: validatedQuery.data.callbackUrl,
-          sessionToken: req.token,
-          verificationRequired: false,
-        }),
-      );
+      await deleteVerificationFlowFromRedis(validatedBody.data.verificationFlowId);
+      const responseBody = await createReadyForRedirectResponse({
+        userId: user.id,
+        orgId,
+        callbackUrl: query.callbackUrl,
+        state: query.state,
+      });
+
+      return OKResponse(res, StatusCodes.OK, 'Email already verified.', responseBody);
     }
 
     const otpCode = await prisma.otpCode.findFirst({
@@ -657,26 +844,134 @@ export const orgVerifyEmail = async (req: Request, res: Response, next: NextFunc
       });
     });
 
-    const isUpdated = await updateAuthSessionInRedis({
-      token: req.token,
-      updates: {
-        user: { emailVerified: true },
-      },
+    await deleteVerificationFlowFromRedis(validatedBody.data.verificationFlowId);
+
+    const responseBody = await createReadyForRedirectResponse({
+      userId: user.id,
+      orgId,
+      callbackUrl: query.callbackUrl,
+      state: query.state,
     });
-    if (!isUpdated) {
-      logger.debug('Failed to update org session in Redis cache.');
+
+    return OKResponse(res, StatusCodes.OK, 'Email verified successfully.', responseBody);
+  } catch (e) {
+    next(e);
+  }
+};
+
+/**
+ * @description Exchanges a one-time code for the final org-scoped session token.
+ */
+export const orgExchangeCode = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    logger.info('Org exchange code auth route hit');
+
+    const orgId = req.org.id;
+    if (!orgId) {
+      return ErrorResponse(
+        res,
+        StatusCodes.BAD_REQUEST,
+        'Organization not found in request context.',
+      );
     }
 
-    return OKResponse(
-      res,
-      StatusCodes.OK,
-      'Email verified successfully.',
-      buildOrgAuthFlowResponse({
-        callbackUrl: validatedQuery.data.callbackUrl,
-        sessionToken: req.token,
-        verificationRequired: false,
+    const validatedBody = orgAuthExchangeSchema.safeParse(req.body);
+    if (!validatedBody.success) {
+      return ErrorResponse(res, StatusCodes.BAD_REQUEST, 'Invalid request body', {
+        issues: formatZodIssues(validatedBody.error.issues),
+      });
+    }
+
+    const callbackValidation = await validateOrgCallbackUrl(orgId, validatedBody.data.callbackUrl);
+    if (!callbackValidation.success) {
+      return ErrorResponse(res, callbackValidation.statusCode, callbackValidation.message);
+    }
+
+    const grant = await consumeAuthCodeGrantFromRedis(validatedBody.data.code);
+    if (!grant) {
+      return ErrorResponse(
+        res,
+        StatusCodes.UNAUTHORIZED,
+        'Code not found, expired, or already used.',
+      );
+    }
+
+    if (
+      grant.orgId !== orgId ||
+      grant.callbackUrl !== validatedBody.data.callbackUrl ||
+      grant.state !== validatedBody.data.state
+    ) {
+      return ErrorResponse(
+        res,
+        StatusCodes.FORBIDDEN,
+        'Code exchange request does not match grant.',
+      );
+    }
+
+    if (new Date(grant.expiresAt) < new Date()) {
+      return ErrorResponse(res, StatusCodes.UNAUTHORIZED, 'Code has expired.');
+    }
+
+    const [user, account, membership] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: grant.userId },
       }),
-    );
+      prisma.account.findFirst({
+        where: {
+          userId: grant.userId,
+          provider: 'LOCAL',
+          providerType: 'CREDENTIAL',
+        },
+      }),
+      prisma.membership.findUnique({
+        where: {
+          userId_organizationId: {
+            userId: grant.userId,
+            organizationId: orgId,
+          },
+        },
+      }),
+    ]);
+
+    if (!user) {
+      return ErrorResponse(res, StatusCodes.NOT_FOUND, 'User not found');
+    }
+
+    if (!account) {
+      return ErrorResponse(res, StatusCodes.NOT_FOUND, 'Account not found');
+    }
+
+    if (!membership || membership.isBanned) {
+      return ErrorResponse(
+        res,
+        StatusCodes.FORBIDDEN,
+        'You are not allowed to access this organization.',
+      );
+    }
+
+    if (!user.emailVerified) {
+      return ErrorResponse(res, StatusCodes.FORBIDDEN, 'Email verification is still required.');
+    }
+
+    await deleteOrgSessions(user.id, orgId);
+
+    const { sessionToken } = await createOrgSession({
+      req,
+      actor: {
+        userId: user.id,
+        emailVerified: user.emailVerified,
+        accountId: account.id,
+        provider: 'LOCAL',
+        providerType: 'CREDENTIAL',
+        accountProviderId: account.accountId,
+      },
+    });
+
+    return OKResponse(res, StatusCodes.OK, 'Code exchanged successfully.', {
+      session: {
+        token: sessionToken,
+      },
+    });
   } catch (e) {
     next(e);
   }
@@ -684,7 +979,7 @@ export const orgVerifyEmail = async (req: Request, res: Response, next: NextFunc
 
 /**
  * @description Logs out the authenticated org user by removing their org-scoped sessions.
- * */
+ */
 export const orgLogout = async (req: Request, res: Response, next: NextFunction) => {
   try {
     logger.info('Org logout auth route hit');
@@ -700,8 +995,6 @@ export const orgLogout = async (req: Request, res: Response, next: NextFunction)
 
     await deleteOrgSessions(req.user.id, orgId);
 
-    res.clearCookie(SESSION_TOKEN_COOKIE_NAME);
-
     return OKResponse(res, StatusCodes.OK, 'User logged out successfully');
   } catch (e) {
     next(e);
@@ -710,7 +1003,7 @@ export const orgLogout = async (req: Request, res: Response, next: NextFunction)
 
 /**
  * @description Returns the authenticated session in the shared SDK session shape for a specific org.
- * */
+ */
 export const getOrgMe = async (req: Request, res: Response, next: NextFunction) => {
   try {
     logger.info('Get org me auth route hit');
@@ -724,75 +1017,12 @@ export const getOrgMe = async (req: Request, res: Response, next: NextFunction) 
       );
     }
 
-    const [user, account, org, membership] = await Promise.all([
-      prisma.user.findUnique({
-        where: { id: req.user.id },
-      }),
-      prisma.account.findFirst({
-        where: { userId: req.user.id },
-        orderBy: { createdAt: 'asc' },
-      }),
-      prisma.organization.findUnique({
-        where: { id: orgId },
-      }),
-      prisma.membership.findUnique({
-        where: {
-          userId_organizationId: {
-            userId: req.user.id,
-            organizationId: orgId,
-          },
-        },
-      }),
-    ]);
-
-    if (!user) {
-      return ErrorResponse(res, StatusCodes.NOT_FOUND, 'User not found');
+    const sessionResponse = await getOrgSessionResponseBody(req.user.id, orgId);
+    if (!sessionResponse.success) {
+      return ErrorResponse(res, sessionResponse.statusCode, sessionResponse.message);
     }
 
-    if (!account) {
-      return ErrorResponse(res, StatusCodes.NOT_FOUND, 'Account not found');
-    }
-
-    if (!org) {
-      return ErrorResponse(res, StatusCodes.NOT_FOUND, 'Organization not found');
-    }
-
-    if (!membership || membership.isBanned) {
-      return ErrorResponse(
-        res,
-        StatusCodes.FORBIDDEN,
-        'You are not allowed to access this organization.',
-      );
-    }
-
-    // this object is shape of the SDK session shape
-    // in `packages/sdk/src/zod.ts` - `ZentrySessionSchema` schema
-    const responseBody = {
-      user: {
-        ...user,
-        createdAt: user.createdAt.toISOString(),
-        updatedAt: user.updatedAt.toISOString(),
-      },
-      org: {
-        id: org.id,
-        name: org.name,
-      },
-      membership: {
-        id: membership.id,
-        role: membership.role,
-        isBanned: membership.isBanned,
-        permissions: membership.permissions,
-      },
-      account: {
-        id: account.id,
-        provider: account.provider,
-        providerType: account.providerType,
-        accountId: account.accountId,
-        providerAvatarUrl: account.providerAvatarUrl,
-      },
-    };
-
-    OKResponse(res, StatusCodes.OK, 'Organization session details', responseBody);
+    OKResponse(res, StatusCodes.OK, 'Organization session details', sessionResponse.data);
   } catch (e) {
     next(e);
   }

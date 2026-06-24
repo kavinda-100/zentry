@@ -8,15 +8,16 @@ import { ORG_ID_HEADER } from '#/constants';
 type OrgUserEmailVerifyProps = {
   orgId: string;
   callbackUrl: string;
+  state: string;
   data: OrgUserVerifyEmailSchemaType;
 };
 
 export function useOrgUserEmailVerify() {
   const { mutate, isPending } = useMutation({
     mutationFn: async (props: OrgUserEmailVerifyProps) => {
-      const { orgId, callbackUrl, data } = props;
+      const { orgId, callbackUrl, state, data } = props;
       const response = await apiWithOrg.post(
-        `/org/verify-email?callbackUrl=${encodeURIComponent(callbackUrl)}`,
+        `/org/verify-email?callbackUrl=${encodeURIComponent(callbackUrl)}&state=${encodeURIComponent(state)}`,
         data,
         {
           headers: {
@@ -24,8 +25,6 @@ export function useOrgUserEmailVerify() {
           },
         },
       );
-      console.log(response.data);
-
       const validator = createOkResponseSchema(orgUserAuthFlowResponseSchema);
       const validatedData = validator.safeParse(response.data);
       if (!validatedData.success) {

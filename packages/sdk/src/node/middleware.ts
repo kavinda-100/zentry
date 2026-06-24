@@ -74,7 +74,7 @@ export class ZentryClient {
       throw new Error('A non-empty user token is required.');
     }
 
-    const response = await axios.get(`${API_BASE_URL}/auth/org/server/me`, {
+    const response = await axios.get(`${API_BASE_URL}/auth/org/me`, {
       headers: this.createRequestHeaders(token.trim()),
     });
 
