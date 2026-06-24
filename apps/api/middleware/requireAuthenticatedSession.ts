@@ -89,7 +89,10 @@ export const requireAuthenticatedSession: RequestHandler = async (
     req.ipAddress = validatedSessionObject.data.ipAddress;
     req.user = validatedSessionObject.data.user;
     req.account = validatedSessionObject.data.account;
-    req.org = validatedSessionObject.data.org;
+    req.org = {
+      ...(req.org ?? {}),
+      ...validatedSessionObject.data.org,
+    };
 
     logger.info('session validated successfully and append to the Request');
     next();

@@ -30,6 +30,20 @@ export function generateSessionToken(): string {
   return randomBytes(191).toString('base64url');
 }
 
+/**
+ * @description Generates a short opaque code for one-time auth handoffs.
+ */
+export function generateOneTimeCode(): string {
+  return randomBytes(32).toString('base64url');
+}
+
+/**
+ * @description Hashes a one-time code before it is persisted outside process memory.
+ */
+export function hashOpaqueCode(value: string): string {
+  return createHash('sha256').update(value).digest('hex');
+}
+
 export function generateOtp(length: number = 6): string {
   return Math.floor(100000 + Math.random() * 900000)
     .toString()

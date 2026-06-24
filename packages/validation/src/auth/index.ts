@@ -4,6 +4,7 @@ const ProviderEnum = z.enum(['CREDENTIAL', 'OAUTH']);
 const AuthProviderEnum = z.enum(['LOCAL', 'GOOGLE']);
 const RoleEnum = z.enum(['ADMIN', 'MEMBER']);
 
+// This shared object schema is used for both the regular and organizational session objects
 export const sessionObjectSchema = z.object({
   sessionId: z.string({ error: 'Session ID is required' }),
   ipAddress: z.string({ error: 'IP address must be a string' }).optional(),

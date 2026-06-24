@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Building2, Check, Copy, Globe, Package2, Shield, TriangleAlert } from 'lucide-react';
+import { Building2, Check, Copy, Globe, Package2, TriangleAlert } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '#/components/ui/avatar.tsx';
 import { Button } from '#/components/ui/button.tsx';
 import {
@@ -219,13 +219,6 @@ export function ProjectOverview({ data, isPending }: { data?: OrgResponse; isPen
     return <ProjectOverviewSkeleton />;
   }
 
-  const environmentLines = [
-    `ZENTRY_ORG_ID="${data.id}"`,
-    `ZENTRY_API_KEY_RAW="${data.apiKeyRow}"`,
-    `ZENTRY_API_KEY_HASH="${data.apiKeyHash}"`,
-    `ZENTRY_API_KEY_PREFIX="${data.apiKeyPrefix}"`,
-  ];
-
   const homeUrlLines =
     data.appHomeUrl.length > 0
       ? data.appHomeUrl.map((url, _index) => `ZENTRY_APP_HOME_URL="${url}"`)
@@ -235,6 +228,10 @@ export function ProjectOverview({ data, isPending }: { data?: OrgResponse; isPen
     data.appCallbackUrl.length > 0
       ? data.appCallbackUrl.map((url, _index) => `ZENTRY_APP_CALLBACK_URL="${url}"`)
       : ['# No callback URLs configured yet'];
+
+  const environmentLines = [`ZENTRY_ORG_ID="${data.id}"`, `ZENTRY_API_KEY="${data.apiKeyRow}"`];
+  environmentLines.push(homeUrlLines.join('\n'));
+  environmentLines.push(callbackUrlLines.join('\n'));
 
   return (
     <div className="space-y-6">
@@ -258,15 +255,19 @@ export function ProjectOverview({ data, isPending }: { data?: OrgResponse; isPen
                     {data.name}
                   </h1>
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-(--sea-ink-soft)">
-                    Use these organization details to wire your app like framework documentation.
-                    The membership table comes next. This first step focuses on installation,
-                    environment variables, and endpoint URLs.
+                    Use these organization details to scaffold your project.
+                    <br />
+                    <br />
+                    <span className="font-semibold">
+                      <span className="text-primary">Note:</span>
+                    </span>{' '}
+                    You can change these details later in the organization settings.
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               <Card className="border border-(--line) bg-white/70 py-4 shadow-none ring-0 dark:bg-slate-950/60">
                 <CardContent className="space-y-2 px-4">
                   <Package2 className="size-4 text-(--sea-ink-soft)" />
@@ -295,17 +296,6 @@ export function ProjectOverview({ data, isPending }: { data?: OrgResponse; isPen
                   </p>
                   <p className="font-mono text-sm text-(--sea-ink) dark:text-slate-100">
                     {data.appHomeUrl.length}
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="border border-(--line) bg-white/70 py-4 shadow-none ring-0 dark:bg-slate-950/60">
-                <CardContent className="space-y-2 px-4">
-                  <Shield className="size-4 text-(--sea-ink-soft)" />
-                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-(--kicker)">
-                    Key Prefix
-                  </p>
-                  <p className="font-mono text-sm text-(--sea-ink) dark:text-slate-100">
-                    {data.apiKeyPrefix}
                   </p>
                 </CardContent>
               </Card>
@@ -341,8 +331,7 @@ export function ProjectOverview({ data, isPending }: { data?: OrgResponse; isPen
                   Install Zentry
                 </CardTitle>
                 <CardDescription className="mt-2 max-w-2xl text-(--sea-ink-soft)">
-                  Pick the package manager that matches your workflow. This is visual-only for now,
-                  just like framework docs.
+                  Pick the package manager that matches your workflow.
                 </CardDescription>
               </div>
 
@@ -392,25 +381,12 @@ export function ProjectOverview({ data, isPending }: { data?: OrgResponse; isPen
         <CodePanel
           eyebrow="Secrets"
           title="Environment Variables"
-          description="These values are rendered like framework documentation so users can copy and paste them straight into local setup files."
+          description="These are the configured organization secrets you need to connect your project to this organization. Add these to your .env file or secret manager of choice."
           lines={environmentLines}
         />
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-2">
-        <CodePanel
-          eyebrow="Routing"
-          title="Home URLs"
-          description="These are the configured app entry points for this organization."
-          lines={homeUrlLines}
-        />
-        <CodePanel
-          eyebrow="Auth Flow"
-          title="Callback URLs"
-          description="Use these redirect targets when wiring OAuth or app callback behavior."
-          lines={callbackUrlLines}
-        />
-      </section>
+      {/*  TODO: code example documentations gose here*/}
     </div>
   );
 }

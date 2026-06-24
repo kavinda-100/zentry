@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import { membershipSchema, organizationSchema, userSchema } from '#/zod';
+import { membershipSchema, organizationSchema, userSchema } from '@zentry/validation';
 
 export const orgCreateResponseSchema = organizationSchema.omit({
-  apiKeyRow: true,
+  apiKeyHash: true,
   apiKeyPrefix: true,
 });
 

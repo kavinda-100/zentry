@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import { accountSchema, membershipSchema, organizationSchema, userSchema } from '#/zod';
+import {
+  accountSchema,
+  membershipSchema,
+  organizationSchema,
+  userSchema,
+} from '@zentry/validation';
 
 export const authSessionDataSchema = z.object({
   session: z.object({

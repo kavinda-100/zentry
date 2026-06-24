@@ -1,0 +1,67 @@
+{
+  "name": "@zentry-org/sdk",
+  "version": "1.0.3",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "author": "Kavinda Rathnayake",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kavinda-100/zentry"
+  },
+  "bugs": {
+    "url": "https://github.com/kavinda-100/zentry/issues"
+  },
+  "homepage": "https://github.com/kavinda-100/zentry#readme",
+  "keywords": [
+    "zentry",
+    "zentry-org",
+    "sdk",
+    "authentication",
+    "authorization",
+    "auth",
+    "auth-sdk",
+    "auth-provider",
+    "react",
+    "node",
+    "typescript"
+  ],
+  "exports": {
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "import": "./dist/react/index.js",
+      "require": "./dist/react/index.cjs"
+    },
+    "./react-server": {
+      "types": "./dist/react/server.d.ts",
+      "import": "./dist/react/server.js",
+      "require": "./dist/react/server.cjs"
+    },
+    "./node": {
+      "types": "./dist/node/index.d.ts",
+      "import": "./dist/node/index.js",
+      "require": "./dist/node/index.cjs"
+    }
+  },
+  "scripts": {
+    "build": "tsup"
+  },
+  "peerDependencies": {
+    "express": "^4.19.0 || ^5.0.0",
+    "react": "^18.0.0 || ^19.0.0"
+  },
+  "dependencies": {
+    "axios": "^1.18.0",
+    "react-dom": "^19.2.7",
+    "tsup": "^8.5.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.0.0",
+    "@types/react": "^19.2.17",
+    "typescript": "^6.0.3"
+  }
+}
