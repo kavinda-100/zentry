@@ -43,7 +43,7 @@ type CreateSessionProps = {
   permissions: string[];
   ipAddress?: string;
   userAgent?: string;
-  expiresInSeconds?: Date;
+  expiresAt?: Date;
 };
 
 type SessionActorDetails = {
@@ -66,8 +66,7 @@ const createSessionInDb = async (props: CreateSessionProps) => {
     data: {
       userId: props.userId,
       token: sessionToken,
-      expiresAt:
-        props.expiresInSeconds ?? new Date(Date.now() + DEFAULT_SESSION_EXPIRY_IN_SECONDS * 1000),
+      expiresAt: props.expiresAt ?? new Date(Date.now() + DEFAULT_SESSION_EXPIRY_IN_SECONDS * 1000),
       organizationId: props.orgId,
       permissions: JSON.stringify(props.permissions),
       ipAddress: props.ipAddress,

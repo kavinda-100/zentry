@@ -1,15 +1,16 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { SectionWrapper } from '#/components/dashboard/SectionWrapper.tsx';
 import {
   ProjectOverview,
   ProjectOverviewError,
 } from '#/components/dashboard/projects/ProjectOverview.tsx';
 import { useGetOrgById } from '#/hooks/org/useGetOrgById.ts';
-import { Button } from '#/components/ui/button.tsx';
+import { Button, buttonVariants } from '#/components/ui/button.tsx';
 import GoBack from '#/components/dashboard/GoBack.tsx';
 import DeleteOrg from '#/components/dashboard/projects/DeleteOrg.tsx';
 import MemberShipTable from '#/components/dashboard/projects/membership-table/MemberShipTable.tsx';
 import { orgMembershipTableRowsSchema } from '#/zod/org';
+import { cn } from '#/lib/utils.ts';
 
 export const Route = createFileRoute('/dashboard/projects/$projectId/')({
   component: RouteComponent,
@@ -53,6 +54,17 @@ function RouteComponent() {
         ) : (
           <ProjectOverview data={data?.data} isPending={isPending} />
         )}
+      </SectionWrapper>
+
+      {/*documentation*/}
+      <SectionWrapper header="Project Docs" title="Documentation">
+        <Link
+          to={'/docs'}
+          className={cn('w-fit text-black!', buttonVariants({ variant: 'default', size: 'lg' }))}
+          target="_blank"
+        >
+          View Documentation
+        </Link>
       </SectionWrapper>
 
       {/*    Members table */}

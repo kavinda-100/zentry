@@ -24,6 +24,13 @@ interface ZentryContextType {
   login: () => void;
   logout: () => Promise<void>;
   getSessionToken: () => string | null;
+  refreshSession: () => Promise<void>;
+}
+
+export interface ZentryCallbackSyncResult {
+  success: boolean;
+  isLoading: boolean;
+  message: string | null;
 }
 
 export interface ZentryProviderProps {
@@ -245,7 +252,16 @@ export function ZentryProvider({ children, env }: ZentryProviderProps) {
 
   return (
     <ZentryContext.Provider
-      value={{ isAuthenticated, isLoading, session, login, logout, register, getSessionToken }}
+      value={{
+        isAuthenticated,
+        isLoading,
+        session,
+        login,
+        logout,
+        register,
+        getSessionToken,
+        refreshSession: syncSession,
+      }}
     >
       {children}
     </ZentryContext.Provider>
@@ -262,12 +278,33 @@ export function useZentry() {
  * Automatically exchanges the callback code, stores the final token, and purges transient URL params.
  */
 export function useZentryCallbackSync() {
+  const context = useContext(ZentryContext);
+  const [result, setResult] = useState<ZentryCallbackSyncResult>({
+    success: false,
+    isLoading: true,
+    message: null,
+  });
+
+  if (!context) throw new Error('useZentryCallbackSync must be nested within a ZentryProvider');
+
   useEffect(() => {
     const syncCallback = async () => {
-      if (typeof window === 'undefined') return;
+      if (typeof window === 'undefined') {
+        setResult({
+          success: false,
+          isLoading: false,
+          message: 'Callback sync is only available in the browser.',
+        });
+        return;
+      }
 
       const callbackParams = getCallbackCodeAndStateFromUrl();
       if (!callbackParams) {
+        setResult({
+          success: false,
+          isLoading: false,
+          message: 'Missing callback code or state in the URL.',
+        });
         return;
       }
 
@@ -275,7 +312,13 @@ export function useZentryCallbackSync() {
       if (!pendingState || pendingState.state !== callbackParams.state) {
         clearPendingAuthState();
         clearCallbackParamsFromUrl();
-        console.error('Invalid or missing auth state during callback processing.');
+        const message = 'Invalid or missing auth state during callback processing.';
+        console.error(message);
+        setResult({
+          success: false,
+          isLoading: false,
+          message,
+        });
         return;
       }
 
@@ -302,13 +345,23 @@ export function useZentryCallbackSync() {
         }
 
         localStorage.setItem(SESSION_TOKEN, validatedData.data.data.session.token);
+        await context.refreshSession();
         clearPendingAuthState();
         clearCallbackParamsFromUrl();
-        window.location.reload();
+        setResult({
+          success: true,
+          isLoading: false,
+          message: 'Token exchange completed successfully.',
+        });
       } catch (error) {
         clearPendingAuthState();
         clearCallbackParamsFromUrl();
         console.error('Error exchanging callback code:', error);
+        setResult({
+          success: false,
+          isLoading: false,
+          message: 'Failed to exchange callback code.',
+        });
       }
     };
 
@@ -320,4 +373,6 @@ export function useZentryCallbackSync() {
         console.error('Error syncing callback:', error);
       });
   }, []);
+
+  return result;
 }

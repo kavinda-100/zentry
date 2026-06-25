@@ -32,7 +32,6 @@ export const Route = createFileRoute('/org/register')({
 
 function RouteComponent() {
   const { callbackUrl, orgId, state } = Route.useSearch();
-  console.log(callbackUrl, orgId, state);
 
   if (!orgId || !callbackUrl || !state) {
     return (
