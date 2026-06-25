@@ -6,6 +6,7 @@ import {
   UnAuthenticated,
   useZentry,
 } from '@zentry-org/sdk/react';
+import { Link } from 'react-router';
 
 const Home = () => {
   const { session, isLoading, isAuthenticated } = useZentry();
@@ -50,6 +51,18 @@ const Home = () => {
             <li>isBand: {session.membership.isBanned}</li>
             <li>permissions: {JSON.stringify(session.membership.permissions, null, 2)}</li>
           </ol>
+
+          <br />
+          <br />
+
+          <Authenticated>
+            <h1>Backend</h1>
+            <p>
+              This is a backend call that will be made when the user clicks the button. The backend
+              will return the user's data.
+            </p>
+            <Link to="/backend">Go to Backend</Link>
+          </Authenticated>
         </div>
       )}
 
