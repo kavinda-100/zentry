@@ -83,21 +83,7 @@ model Membership {
 
   role        Role    @default(MEMBER)
   isBanned    Boolean @default(false)
-  permissions Json? // permission objects eg:
-  /**
-   * {
-   * "role": "ADMIN",
-   * "scopes": [
-   * "org:read",
-   * "org:update",
-   * "members:create",
-   * "members:read",
-   * "members:update",
-   * "members:delete",
-   * "billing:read"
-   * ]
-   * }
-   */
+  permissions Json?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
