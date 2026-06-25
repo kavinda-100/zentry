@@ -1,6 +1,10 @@
 import type { NextFunction, Request, Response } from 'express';
 import { prisma } from '@zentry/database';
-import { formatZodIssues, orgUserAuthCallbackUrlQuerySchema } from '@zentry/validation';
+import {
+  formatZodIssues,
+  orgGoogleAuthStartQuerySchema,
+  orgUserAuthCallbackUrlQuerySchema,
+} from '@zentry/validation';
 import {
   GoogleProfileSchema,
   type GoogleProfileType,
@@ -14,7 +18,6 @@ import { getOrgGoogleAuthUrl, getOrgGoogleUserInfo } from '../../../lib/OAuth/or
 import {
   createReadyForRedirectResponse,
   deleteOrgSessions,
-  validateOrgAuthRequestQuery,
   validateOrgCallbackUrl,
 } from './shared';
 
@@ -264,20 +267,30 @@ export const orgGoogleOauth = async (req: Request, res: Response, next: NextFunc
   try {
     logger.info('Org Google OAuth route hit');
 
-    const validatedRequest = await validateOrgAuthRequestQuery(req, res);
-    if (!validatedRequest) {
-      return;
+    const validatedQuery = orgGoogleAuthStartQuerySchema.safeParse(req.query);
+    if (!validatedQuery.success) {
+      return ErrorResponse(res, StatusCodes.BAD_REQUEST, 'Invalid request query', {
+        issues: formatZodIssues(validatedQuery.error.issues),
+      });
     }
 
-    const url = getOrgGoogleAuthUrl(
+    const callbackValidation = await validateOrgCallbackUrl(
+      validatedQuery.data.orgId,
+      validatedQuery.data.callbackUrl,
+    );
+    if (!callbackValidation.success) {
+      return ErrorResponse(res, callbackValidation.statusCode, callbackValidation.message);
+    }
+
+    const authUrl = getOrgGoogleAuthUrl(
       encodeOrgGoogleState({
-        orgId: validatedRequest.orgId,
-        callbackUrl: validatedRequest.query.callbackUrl,
-        state: validatedRequest.query.state,
+        orgId: validatedQuery.data.orgId,
+        callbackUrl: validatedQuery.data.callbackUrl,
+        state: validatedQuery.data.state,
       }),
     );
 
-    res.redirect(url);
+    res.redirect(authUrl);
   } catch (error) {
     next(error);
   }

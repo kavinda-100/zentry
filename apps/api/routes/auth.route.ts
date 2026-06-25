@@ -52,8 +52,8 @@ router.get(
 router.get('/providers', standardRateLimiter, (_req: Request, res: Response) => {
   res.status(200).json({ providers: ['credential', 'google'] });
 });
-// google oAuth routes
-// GET https://localhost:5000/api/v1/auth/providers/google
+// google oauth routes
+// GET https://localhost:5000/api/v1/auth/providers/google?callbackUrl=...`
 router.get('/providers/google', standardRateLimiter, googleOauth);
 // GET https://localhost:5000/api/v1/auth/providers/google/callback
 router.get('/providers/google/callback', standardRateLimiter, googleOauthCallback);
@@ -88,8 +88,8 @@ router.get(
 );
 
 // org google oAuth routes
-// GET https://localhost:5000/api/v1/auth/org/providers/google
-router.get('/org/providers/google', standardRateLimiter, resolveOrgContext, orgGoogleOauth);
+// GET https://localhost:5000/api/v1/auth/org/providers/google?callbackUrl=...&orgId=...&state=...
+router.get('/org/providers/google', standardRateLimiter, orgGoogleOauth);
 // GET https://localhost:5000/api/v1/auth/org/providers/google/callback
 router.get('/org/providers/google/callback', standardRateLimiter, orgGoogleOauthCallback);
 
