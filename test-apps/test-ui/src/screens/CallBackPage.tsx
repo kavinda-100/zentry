@@ -53,15 +53,15 @@ const CallBackPage = () => {
     >
       <h1>Finishing sign-in...</h1>
       <p>
-        {isLoading
-          ? 'We are syncing your session.'
-          : message ?? 'Callback processing finished.'}
+        {isLoading ? 'We are syncing your session.' : (message ?? 'Callback processing finished.')}
       </p>
       {success && <p>Redirecting you to the home page...</p>}
       {!success && !isLoading && (
-        <p>If nothing happens, you can return home in {count}s.</p>
+        <>
+          <p>If nothing happens, you can return home in {count}s.</p>
+          <Link to="/">Return to Home</Link>
+        </>
       )}
-      <Link to="/">Return to Home</Link>
     </div>
   );
 };
