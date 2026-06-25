@@ -29,3 +29,6 @@ export const orgMembershipTableRowsSchema = z.array(orgMembershipTableRowSchema)
 export const orgGetByIdResponseSchema = organizationSchema.extend({
   memberships: z.array(orgMembershipSchema),
 });
+
+export const memberDetailsResponseSchema = membershipSchema;
+export const memberMutationResponseSchema = membershipSchema;
