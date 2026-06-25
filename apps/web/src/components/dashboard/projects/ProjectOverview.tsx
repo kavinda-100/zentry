@@ -17,9 +17,9 @@ type OrgResponse = NonNullable<ReturnType<typeof useGetOrgById>['data']>['data']
 type PackageManager = 'npm' | 'pnpm' | 'bun';
 
 const packageManagerCommands: Record<PackageManager, string> = {
-  npm: 'npm install zentry',
-  pnpm: 'pnpm add zentry',
-  bun: 'bun add zentry',
+  npm: 'npm install @zentry-org/sdk',
+  pnpm: 'pnpm add @zentry-org/sdk',
+  bun: 'bun add @zentry-org/sdk',
 };
 
 const formatDate = (value: string) => {

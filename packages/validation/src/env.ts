@@ -34,6 +34,16 @@ export const ApiEnvSchema = z.object({
   GOOGLE_REDIRECT_URI: z.string({
     error: 'GOOGLE_REDIRECT_URI is required for Google OAuth authentication.',
   }),
+  GOOGLE_CLIENT_ID_ORG: z.string({
+    error: 'GOOGLE_CLIENT_ID_ORG is required for Google OAuth authentication for organizations.',
+  }),
+  GOOGLE_CLIENT_SECRET_ORG: z.string({
+    error:
+      'GOOGLE_CLIENT_SECRET_ORG is required for Google OAuth authentication for organizations.',
+  }),
+  GOOGLE_REDIRECT_URI_ORG: z.string({
+    error: 'GOOGLE_REDIRECT_URI_ORG is required for Google OAuth authentication for organizations.',
+  }),
   WEB_URL: z.url({
     error: 'WEB_URL is required so OAuth callbacks can redirect users back to the web app.',
   }),

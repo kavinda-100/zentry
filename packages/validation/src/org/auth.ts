@@ -7,6 +7,10 @@ export const orgUserAuthCallbackUrlQuerySchema = z.object({
   }),
 });
 
+export const orgGoogleAuthStartQuerySchema = orgUserAuthCallbackUrlQuerySchema.extend({
+  orgId: z.uuid({ error: 'Organization ID is required' }),
+});
+
 export const orgUserRegisterSchema = z.object({
   email: z.email({ error: 'Invalid email' }),
   firstName: z.string({ error: 'First name is required' }).min(3, {
@@ -92,6 +96,7 @@ export type OrgUserVerifyEmailSchemaType = z.infer<typeof orgUserVerifyEmailSche
 export type OrgUserAuthCallbackUrlQuerySchemaType = z.infer<
   typeof orgUserAuthCallbackUrlQuerySchema
 >;
+export type OrgGoogleAuthStartQuerySchemaType = z.infer<typeof orgGoogleAuthStartQuerySchema>;
 export type OrgAuthPendingVerificationResponseSchemaType = z.infer<
   typeof orgAuthPendingVerificationResponseSchema
 >;

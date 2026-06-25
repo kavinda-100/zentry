@@ -17,7 +17,7 @@ export function useOrgUserRegister() {
     mutationFn: async (props: OrgUserRegisterProps) => {
       const { orgId, callbackUrl, state, data } = props;
       const response = await apiWithOrg.post(
-        `/org/register?callbackUrl=${encodeURIComponent(callbackUrl)}&state=${encodeURIComponent(state)}`,
+        `/auth/org/register?callbackUrl=${encodeURIComponent(callbackUrl)}&state=${encodeURIComponent(state)}`,
         data,
         {
           headers: {

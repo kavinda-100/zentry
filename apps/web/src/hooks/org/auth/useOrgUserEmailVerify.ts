@@ -17,7 +17,7 @@ export function useOrgUserEmailVerify() {
     mutationFn: async (props: OrgUserEmailVerifyProps) => {
       const { orgId, callbackUrl, state, data } = props;
       const response = await apiWithOrg.post(
-        `/org/verify-email?callbackUrl=${encodeURIComponent(callbackUrl)}&state=${encodeURIComponent(state)}`,
+        `/auth/org/verify-email?callbackUrl=${encodeURIComponent(callbackUrl)}&state=${encodeURIComponent(state)}`,
         data,
         {
           headers: {

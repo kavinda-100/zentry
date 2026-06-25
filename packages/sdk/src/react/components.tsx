@@ -1,60 +1,97 @@
 import React from 'react';
 import { useZentry } from './context';
 
-interface ButtonProps {
-  className?: string;
+export interface ZentryButtonProps extends React.ComponentPropsWithoutRef<'button'> {
   label?: string;
 }
+
+const getButtonContent = (children: React.ReactNode, label: string) => {
+  return children ?? label;
+};
 
 /**
  * @description Register Button
  * @returns A button component
- * @param className - The class name of the button
- * @param label - The label of the button
+ * @param label - The fallback label of the button
  * */
-export const RegisterButton = ({ className = '', label = 'Register' }: ButtonProps) => {
-  const { register } = useZentry();
-  return (
-    <button onClick={register} className={className}>
-      {label}
-    </button>
-  );
-};
+export const RegisterButton = React.forwardRef<HTMLButtonElement, ZentryButtonProps>(
+  ({ label = 'Register', children, onClick, type = 'button', ...props }, ref) => {
+    const { register } = useZentry();
+    return (
+      <button
+        {...props}
+        ref={ref}
+        type={type}
+        onClick={(event) => {
+          onClick?.(event);
+          if (!event.defaultPrevented) {
+            register();
+          }
+        }}
+      >
+        {getButtonContent(children, label)}
+      </button>
+    );
+  },
+);
+
+RegisterButton.displayName = 'RegisterButton';
 
 /**
  * @description Login Button
  * @returns A button component
- * @param className - The class name of the button
- * @param label - The label of the button
+ * @param label - The fallback label of the button
  * */
-export function LoginButton({ className = '', label = 'Login' }: ButtonProps) {
-  const { login } = useZentry();
-  return (
-    <button onClick={login} className={className}>
-      {label}
-    </button>
-  );
-}
+export const LoginButton = React.forwardRef<HTMLButtonElement, ZentryButtonProps>(
+  ({ label = 'Login', children, onClick, type = 'button', ...props }, ref) => {
+    const { login } = useZentry();
+    return (
+      <button
+        {...props}
+        ref={ref}
+        type={type}
+        onClick={(event) => {
+          onClick?.(event);
+          if (!event.defaultPrevented) {
+            login();
+          }
+        }}
+      >
+        {getButtonContent(children, label)}
+      </button>
+    );
+  },
+);
+
+LoginButton.displayName = 'LoginButton';
 
 /**
  * @description Logout Button
  * @returns A button component
- * @param className - The class name of the button
- * @param label - The label of the button
+ * @param label - The fallback label of the button
  * */
-export function LogoutButton({ className = '', label = 'LogOut' }: ButtonProps) {
-  const { logout } = useZentry();
-  return (
-    <button
-      onClick={async () => {
-        await logout();
-      }}
-      className={className}
-    >
-      {label}
-    </button>
-  );
-}
+export const LogoutButton = React.forwardRef<HTMLButtonElement, ZentryButtonProps>(
+  ({ label = 'LogOut', children, onClick, type = 'button', ...props }, ref) => {
+    const { logout } = useZentry();
+    return (
+      <button
+        {...props}
+        ref={ref}
+        type={type}
+        onClick={async (event) => {
+          onClick?.(event);
+          if (!event.defaultPrevented) {
+            await logout();
+          }
+        }}
+      >
+        {getButtonContent(children, label)}
+      </button>
+    );
+  },
+);
+
+LogoutButton.displayName = 'LogoutButton';
 
 /**
  * @description Authenticated Component

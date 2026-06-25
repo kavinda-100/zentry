@@ -17,6 +17,18 @@ export const kafka = new Kafka({
 });
 
 const producer = kafka.producer({ createPartitioner: Partitioners.LegacyPartitioner });
+let producerConnectPromise: Promise<void> | null = null;
+
+async function ensureProducerConnected() {
+  if (!producerConnectPromise) {
+    producerConnectPromise = producer.connect().catch((error) => {
+      producerConnectPromise = null;
+      throw error;
+    });
+  }
+
+  await producerConnectPromise;
+}
 
 /**
  * @description This function is used to publish an authentication event to the Kafka topic.
@@ -35,8 +47,8 @@ export async function publishAuthEvent<T extends AuthEventType>({
   payload: AuthEventPayloadMap[T];
 }): Promise<void> {
   try {
-    // connect to the Kafka broker
-    await producer.connect();
+    // Connect once and reuse the same producer for later auth events.
+    await ensureProducerConnected();
 
     // construct the event payload
     const eventPayload: KafkaEventPayloadType<T, AuthEventPayloadMap[T]> = {

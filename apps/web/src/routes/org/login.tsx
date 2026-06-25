@@ -2,7 +2,6 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { orgUserLoginSchema, type OrgUserLoginSchemaType } from '@zentry/validation';
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { Controller, useForm } from 'react-hook-form';
-import { FcGoogle } from 'react-icons/fc';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -17,10 +16,8 @@ import { Input } from '@/components/ui/input';
 import { z } from 'zod';
 import { useOrgUserLogIn } from '#/hooks/org/auth/useOrgUserLogIn.ts';
 import { toast } from 'sonner';
-import {
-  buildCallbackUrlWithCode,
-  storeOrgVerificationFlow,
-} from '#/hooks/auth/authentication.ts';
+import { buildCallbackUrlWithCode, storeOrgVerificationFlow } from '#/hooks/auth/authentication.ts';
+import OrgGoogleButton from '#/components/auth/OrgGoogleButton.tsx';
 
 export const Route = createFileRoute('/org/login')({
   ssr: false,
@@ -59,12 +56,12 @@ function RouteComponent() {
 
   function onSubmit(inputs: OrgUserLoginSchemaType) {
     mutate(
-        {
-          orgId: orgId!,
-          callbackUrl: callbackUrl!,
-          state: state!,
-          data: inputs,
-        },
+      {
+        orgId: orgId!,
+        callbackUrl: callbackUrl!,
+        state: state!,
+        data: inputs,
+      },
       {
         onSuccess: async (data) => {
           toast.success('Signed in successfully!');
@@ -158,10 +155,7 @@ function RouteComponent() {
 
         <div className="mt-3 flex w-full flex-col gap-3">
           <p className="text-center text-xs text-muted-foreground">Or</p>
-          <Button type="button" className="w-full cursor-pointer" variant="outline">
-            <FcGoogle className="h-5 w-5" />
-            Continue with Google
-          </Button>
+          <OrgGoogleButton orgId={orgId!} callbackUrl={callbackUrl!} state={state!} />
         </div>
 
         <p className="text-sm text-muted-foreground">

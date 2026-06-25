@@ -54,47 +54,48 @@ Zentry now uses a secure redirect handoff:
 
 ```mermaid
 sequenceDiagram
-    participant U as User Browser
-    participant A as Consumer App
-    participant Z as Zentry Hosted UI
+    participant U as User
+    participant App as Consumer App
+    participant UI as Zentry Hosted UI
     participant API as Zentry API
-    participant R as Redis
-    participant B as Consumer Backend
+    participant Store as Redis
+    participant Backend as Consumer Backend
 
-    U->>A: Open app
-    A->>U: Render login/register button
-    U->>A: Click login/register
-    A->>U: Redirect to Zentry with orgId + callbackUrl + state
-    U->>Z: Open hosted org auth page
-    Z->>API: Submit register/login
-    API->>R: Create verification flow or auth code grant
-    API-->>Z: Typed auth response
+    U->>App: Open app
+    App-->>U: Render login and register actions
+    U->>App: Click login or register
+    App->>App: Generate and store callback state
+    App-->>U: Redirect browser with orgId, callbackUrl, and state
+    U->>UI: Open hosted org auth page
+    UI->>API: Submit org login or registration request
 
     alt Email verification required
-        Z->>U: Show verify email screen
-        U->>Z: Submit OTP
-        Z->>API: Verify email with verification flow
-        API->>R: Replace verification flow with auth code grant
-        API-->>Z: READY_FOR_REDIRECT with code + state
-    else Already verified
-        API-->>Z: READY_FOR_REDIRECT with code + state
+        API->>Store: Create verification flow
+        API-->>UI: Verification required
+        UI-->>U: Prompt for email verification
+        U->>UI: Submit verification code
+        UI->>API: Verify email
+        API->>Store: Replace verification flow with auth code grant
+        API-->>UI: Ready to redirect with auth code
+    else User already verified
+        API->>Store: Create one-time auth code grant
+        API-->>UI: Ready to redirect with auth code
     end
 
-    Z->>U: Redirect to callbackUrl?code=...&state=...
-    U->>A: Open callback route
-    A->>A: Validate state from sessionStorage
-    A->>API: Exchange code for final session token
-    API->>R: Consume one-time auth code
-    API->>R: Create final session snapshot
-    API-->>A: Return final session token
-    A->>A: Store final token in localStorage
-    A->>API: GET /auth/org/me with Bearer token
-    API-->>A: Return normalized session payload
+    UI-->>U: Redirect to callbackUrl with code and state
+    U->>App: Open callback route
+    App->>App: Validate returned state
+    App->>API: Exchange code for final session token
+    API->>Store: Consume auth code and create session snapshot
+    API-->>App: Return session token
+    App->>App: Store token in localStorage
+    App->>API: Fetch current session with bearer token
+    API-->>App: Return normalized session payload
 
-    A->>B: API request with Authorization Bearer token
-    B->>API: Validate user token with orgId + apiKey
-    API-->>B: Return normalized session payload
-    B-->>A: Protected app response
+    App->>Backend: Call protected backend API with bearer token
+    Backend->>API: Validate token with orgId and apiKey
+    API-->>Backend: Return normalized session payload
+    Backend-->>App: Return protected app response
 ```
 
 ## Shared Session Shape
@@ -247,8 +248,17 @@ Create the callback page:
 import { useZentryCallbackSync } from '@zentry-org/sdk/react';
 
 export default function AuthCallbackPage() {
-  useZentryCallbackSync();
-  return <div>Signing you in...</div>;
+  const { isLoading, success, message } = useZentryCallbackSync();
+
+  if (isLoading) {
+    return <div>Signing you in...</div>;
+  }
+
+  if (!success) {
+    return <div>{message ?? 'Sign-in failed. Please try again.'}</div>;
+  }
+
+  return <div>{message ?? 'Sign-in completed successfully.'}</div>;
 }
 ```
 
@@ -303,8 +313,17 @@ export const Route = createFileRoute('/auth/callback')({
 });
 
 function AuthCallbackPage() {
-  useZentryCallbackSync();
-  return <div>Signing you in...</div>;
+  const { isLoading, success, message } = useZentryCallbackSync();
+
+  if (isLoading) {
+    return <div>Signing you in...</div>;
+  }
+
+  if (!success) {
+    return <div>{message ?? 'Sign-in failed. Please try again.'}</div>;
+  }
+
+  return <div>{message ?? 'Sign-in completed successfully.'}</div>;
 }
 ```
 
@@ -375,8 +394,17 @@ Callback page example:
 import { useZentryCallbackSync } from '@zentry-org/sdk/react';
 
 export default function AuthCallbackPage() {
-  useZentryCallbackSync();
-  return <div>Signing you in...</div>;
+  const { isLoading, success, message } = useZentryCallbackSync();
+
+  if (isLoading) {
+    return <div>Signing you in...</div>;
+  }
+
+  if (!success) {
+    return <div>{message ?? 'Sign-in failed. Please try again.'}</div>;
+  }
+
+  return <div>{message ?? 'Sign-in completed successfully.'}</div>;
 }
 ```
 
@@ -408,6 +436,12 @@ export default async function DashboardPage() {
 
 `useZentryCallbackSync()` should be used only on your callback page.
 
+It returns:
+
+- `isLoading`: `true` while the code exchange is in progress
+- `success`: `true` when the token exchange completed successfully
+- `message`: a human-readable success or error message
+
 What it does:
 
 1. reads `code` and `state` from the URL
@@ -415,16 +449,25 @@ What it does:
 3. exchanges `code` for the final session token
 4. stores that final token in `localStorage`
 5. removes temporary query params from the URL
-6. reloads so normal session sync can run
+6. refreshes the provider session state so your app can react immediately
 
-This is why your callback page can stay very small:
+Example:
 
 ```tsx
 import { useZentryCallbackSync } from '@zentry-org/sdk/react';
 
 export default function AuthCallbackPage() {
-  useZentryCallbackSync();
-  return <div>Signing you in...</div>;
+  const { isLoading, success, message } = useZentryCallbackSync();
+
+  if (isLoading) {
+    return <div>Signing you in...</div>;
+  }
+
+  if (!success) {
+    return <div>{message ?? 'Sign-in failed. Please try again.'}</div>;
+  }
+
+  return <div>{message ?? 'Sign-in completed successfully.'}</div>;
 }
 ```
 
@@ -604,7 +647,7 @@ It does not perform a remote validation request by itself.
 5. Zentry redirects back with `code + state`
 6. `useZentryCallbackSync()` validates state and exchanges the code
 7. the final token is stored in `localStorage`
-8. the provider loads the normalized session payload
+8. the provider refreshes and loads the normalized session payload
 
 ### Backend flow
 
