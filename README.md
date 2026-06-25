@@ -1,54 +1,79 @@
-# Zentry (Multi-Tenant Identity & Auth Provider)
+# Zentry
 
-Zentry is a production-grade, high-performance, multi-tenant Identity Provider (IdP) built as an educational blueprint for secure,
-high-throughput session topologies. It mirrors advanced patterns found in modern enterprise auth systems like Clerk, focusing heavily on
-live-revocation architecture, tenant isolation, and asynchronous message queues.
+Zentry is a multi-tenant authentication platform built in a `pnpm` TypeScript monorepo. The current product surface includes the core auth API, the hosted web app, the background worker, and the SDK used by client apps and backend services.
 
-## 🚀 Architectural Pillars
+## What I Have Built
 
-1. **Stateful Session Topology ("Live-Revoke"):**
-   - Opaque high-entropy tokens sent via `HttpOnly`, `Secure`, `SameSite=Lax` cookies.
-   - Central low-latency session validation powered by **Redis**.
-   - Immediate privilege revocation, user banning, and active session purging without waiting for JWT expiration.
-   - Database durability backed by **PostgreSQL** via **Prisma ORM**.
+- `apps/api`: the authentication API and session gateway
+- `apps/web`: the hosted Zentry web app for auth flows, organization management, and docs
+- `apps/worker`: the background worker for async email and event-driven jobs
+- `packages/sdk`: the integration SDK for React apps and Node backends
 
-2. **Tenant & Organization Isolation:**
-   - Soft-partitioned multi-tenancy using explicit organizational discriminator columns.
-   - Role-Based Access Control (RBAC) dynamically fetched and mapped in the session payload.
+SDK details live in [packages/sdk/README.md](./packages/sdk/README.md).
 
-3. **Asynchronous Event-Driven Processing:**
-   - Non-blocking execution lines using **Kafka** to handle heavy secondary actions.
-   - Separate background workers for transactional workflows via **React Email** and **Nodemailer**.
+## Auth Strategies
 
-## 🛠️ Tech Stack & Workspace Blueprint
+Zentry currently supports:
 
-- **Package Manager:** `pnpm` Workspaces (Monorepo)
-- **Languages:** TypeScript
-- **Runtime & Gateway:** Node.js + Express.js
-- **Cache & Session Layer:** Redis
-- **Message Broker:** Apache Kafka
-- **Database Layer:** PostgreSQL + Prisma ORM
-- **Validation:** Zod
-- **Email Pipeline:** React Email + Nodemailer
-- **Containerization:** Docker + Docker Compose
-- **CI/CD:** GitHub Actions
-- **Other:** tsx, eslint, prettier,
+- email + password authentication
+- Google OAuth
+- email verification with OTP
+- organization-scoped hosted auth with redirect `code + state` exchange
+- stateful session validation with Redis-backed live revocation
+- cookie-based sessions for web clients and bearer-token support for API consumers
 
-## 📁 Repository Structure
+## Technologies
+
+- TypeScript
+- Node.js
+- Express
+- TanStack Start
+- React
+- PostgreSQL
+- Prisma ORM
+- Redis
+- Kafka
+- Zod
+- React Email
+- Nodemailer
+- Docker Compose
+- pnpm workspaces
+
+## Repository Structure
 
 ```text
 zentry/
 ├── apps/
-│   ├── api/                 # Express.js Authentication Server / Gateway
-│   └── worker/              # Background worker for Kafka consumers (Emails, logs)
+│   ├── api/
+│   ├── web/
+│   └── worker/
 ├── packages/
-│   ├── database/            # Prisma ORM Schema & Client Wrapper
-│   ├── types/               # Shared types
-│   └── validation/          # Shared Zod schemas (Auth requests, Org creation)
-├── pnpm-workspace.yaml      # Monorepo configuration
-├── package.json             # Root package definition
-├── tsconfig.base.json       # Root typescript configuration
-├── docker-compose.yml       # Docker Compose configuration
-├── README.md                # Project Blueprint & Architecture Map
-└── AGENT.md                 # Agentic workflow rules and execution context
+│   ├── database/
+│   ├── sdk/
+│   ├── types/
+│   └── validation/
+└── test-apps/
+    ├── test-api/
+    └── test-ui/
 ```
+
+## Development
+
+```bash
+pnpm install
+docker compose up -d
+pnpm dev
+```
+
+Useful commands:
+
+- `pnpm dev`: run the workspace apps in development
+- `pnpm dev:test`: run the SDK test apps
+- `pnpm build`: build shared packages and apps
+- `pnpm db:generate`: generate Prisma client
+- `pnpm db:push`: push the current schema
+
+## Notes
+
+- `test-apps/test-ui` and `test-apps/test-api` are used to validate the SDK and end-to-end auth integration flows.
+- Root-level automated tests are not fully wired yet, so current validation is mainly through the running apps, Postman, and the test apps.
