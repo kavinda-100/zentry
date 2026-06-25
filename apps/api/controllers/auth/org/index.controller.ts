@@ -650,9 +650,8 @@ export const orgExchangeCode = async (req: Request, res: Response, next: NextFun
       prisma.account.findFirst({
         where: {
           userId: grant.userId,
-          provider: 'LOCAL',
-          providerType: 'CREDENTIAL',
         },
+        orderBy: { createdAt: 'asc' },
       }),
       prisma.membership.findUnique({
         where: {
@@ -692,8 +691,8 @@ export const orgExchangeCode = async (req: Request, res: Response, next: NextFun
         userId: user.id,
         emailVerified: user.emailVerified,
         accountId: account.id,
-        provider: 'LOCAL',
-        providerType: 'CREDENTIAL',
+        provider: account.provider,
+        providerType: account.providerType,
         accountProviderId: account.accountId,
       },
     });
