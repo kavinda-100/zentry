@@ -4,6 +4,7 @@ import { createBrowserRouter } from 'react-router';
 import { RouterProvider } from 'react-router/dom';
 import Home from './screens/Home.tsx';
 import CallBackPage from './screens/CallBackPage.tsx';
+import Backend from './screens/Backend.tsx';
 import { ZentryProviders } from './provides/ZentryProvider.tsx';
 
 const router = createBrowserRouter([
@@ -14,6 +15,10 @@ const router = createBrowserRouter([
   {
     path: '/callback',
     element: <CallBackPage />,
+  },
+  {
+    path: '/backend',
+    element: <Backend />,
   },
 ]);
 
