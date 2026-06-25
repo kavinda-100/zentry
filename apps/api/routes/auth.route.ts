@@ -23,6 +23,10 @@ import {
   orgRegister,
   orgVerifyEmail,
 } from '../controllers/auth/org/index.controller';
+import {
+  orgGoogleOauth,
+  orgGoogleOauthCallback,
+} from '../controllers/auth/org/org.google.oauth.controller';
 
 export const router = Router();
 
@@ -82,5 +86,11 @@ router.get(
   requireOrgMembership,
   getOrgMe,
 );
+
+// org google oAuth routes
+// GET https://localhost:5000/api/v1/auth/org/providers/google
+router.get('/org/providers/google', standardRateLimiter, resolveOrgContext, orgGoogleOauth);
+// GET https://localhost:5000/api/v1/auth/org/providers/google/callback
+router.get('/org/providers/google/callback', standardRateLimiter, orgGoogleOauthCallback);
 
 export default router;
