@@ -32,8 +32,8 @@ const Home = () => {
           <h1>user</h1>
           <ol>
             <li>id: {session.user.id}</li>
-            <li>userId: {session.user.firstName}</li>
-            <li>email: {session.user.lastName}</li>
+            <li>firstName: {session.user.firstName}</li>
+            <li>lastName: {session.user.lastName}</li>
             <li>email: {session.user.email}</li>
           </ol>
           <br />
