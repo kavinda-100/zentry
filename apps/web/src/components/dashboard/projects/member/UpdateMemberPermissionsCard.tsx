@@ -4,14 +4,24 @@ import { Loader2, Save, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 import { Button } from '#/components/ui/button.tsx';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '#/components/ui/card.tsx';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '#/components/ui/card.tsx';
 import { Field, FieldDescription, FieldError, FieldLabel } from '#/components/ui/field.tsx';
 import { Textarea } from '#/components/ui/textarea.tsx';
 import { useUpdateMemberPermissions } from '#/hooks/org/members/useUpdateMemberPermissions.ts';
 import { orgMemberQueryKey } from '#/hooks/org/members/queryKeys.ts';
 import { memberDetailsResponseSchema } from '#/zod/org';
 import { MemberActionAlert } from '#/components/dashboard/projects/member/MemberActionAlert.tsx';
-import { getErrorMessage, stringifyPermissions } from '#/components/dashboard/projects/member/utils.ts';
+import {
+  getErrorMessage,
+  stringifyPermissions,
+} from '#/components/dashboard/projects/member/utils.ts';
 
 type MemberDetails = z.infer<typeof memberDetailsResponseSchema>;
 
@@ -81,7 +91,8 @@ export function UpdateMemberPermissionsCard({
       <CardHeader className="border-b border-(--line) pb-5">
         <CardTitle>Update Permissions</CardTitle>
         <CardDescription>
-          Edit member-specific permissions as JSON, or clear the field to store no custom permissions.
+          Edit member-specific permissions as JSON, or clear the field to store no custom
+          permissions.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 pt-6">
@@ -101,7 +112,7 @@ export function UpdateMemberPermissionsCard({
             onChange={(event) => setPermissionsText(event.target.value)}
             aria-invalid={!parsedPermissions.success}
             disabled={isPending}
-            placeholder={`{\n  "canInviteUsers": true,\n  "allowedDomains": ["example.com"]\n}`}
+            placeholder={`{\n  "org:read": true,\n  "org:edit": false\n}`}
             spellCheck={false}
             className="min-h-48 font-mono text-xs"
           />
@@ -116,7 +127,11 @@ export function UpdateMemberPermissionsCard({
           <Trash2 className="size-4" />
           Clear field
         </Button>
-        <Button type="button" disabled={isPending || !parsedPermissions.success} onClick={handleSave}>
+        <Button
+          type="button"
+          disabled={isPending || !parsedPermissions.success}
+          onClick={handleSave}
+        >
           {isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
           Save permissions
         </Button>

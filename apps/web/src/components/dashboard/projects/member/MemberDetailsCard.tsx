@@ -47,13 +47,15 @@ export function MemberDetailsCard({ member, email, imageUrl }: MemberDetailsCard
           <MemberStatusBadge isBanned={member.isBanned} />
         </div>
       </CardHeader>
-      <CardContent className="grid gap-6 pt-6 md:grid-cols-[auto,1fr]">
-        <Avatar size="lg" className="border border-(--line) bg-(--surface-strong)">
-          <AvatarImage src={imageUrl ?? undefined} alt={email ?? 'Member avatar'} />
-          <AvatarFallback className="bg-primary/10 font-semibold uppercase text-primary">
-            {getInitials(email)}
-          </AvatarFallback>
-        </Avatar>
+      <CardContent className="grid gap-6 pt-6 lg:grid-cols-[minmax(220px,280px),1fr]">
+        <div className="flex min-h-full items-center justify-center border border-(--line) bg-(--surface-strong) p-6">
+          <Avatar className="size-28 border border-(--line) bg-background">
+            <AvatarImage src={imageUrl ?? undefined} alt={email ?? 'Member avatar'} />
+            <AvatarFallback className="bg-primary/10 text-2xl font-semibold uppercase text-primary">
+              {getInitials(email)}
+            </AvatarFallback>
+          </Avatar>
+        </div>
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="border border-(--line) p-4">
@@ -84,7 +86,7 @@ export function MemberDetailsCard({ member, email, imageUrl }: MemberDetailsCard
           </div>
         </div>
 
-        <div className="md:col-span-2 border border-(--line) p-4">
+        <div className="lg:col-span-2 border border-(--line) p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-(--kicker)">
             Permissions
           </p>

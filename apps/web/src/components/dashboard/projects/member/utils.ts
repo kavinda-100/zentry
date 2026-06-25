@@ -44,5 +44,18 @@ export const stringifyPermissions = (permissions: unknown) => {
     return '';
   }
 
+  if (Array.isArray(permissions) && permissions.length === 0) {
+    return '';
+  }
+
+  if (
+    typeof permissions === 'object' &&
+    permissions !== null &&
+    !Array.isArray(permissions) &&
+    Object.keys(permissions).length === 0
+  ) {
+    return '';
+  }
+
   return JSON.stringify(permissions, null, 2);
 };
