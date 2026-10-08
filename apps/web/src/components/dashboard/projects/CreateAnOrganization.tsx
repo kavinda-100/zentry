@@ -38,7 +38,7 @@ const defaultValues = (): CreateOrgFormValues => ({
   appCallbackUrls: [],
 });
 
-const CreateAnOrganization = () => {
+const CreateAnOrganization = ({ label = 'Create an Organization' }: { label?: string }) => {
   const [showAlert, setShowAlert] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -124,7 +124,10 @@ const CreateAnOrganization = () => {
       }}
     >
       <DialogTrigger asChild>
-        <Button variant="outline">Create an Organization</Button>
+        <Button variant="outline">
+          <Plus data-icon="inline-start" />
+          {label}
+        </Button>
       </DialogTrigger>
       <DialogContent className="flex max-h-[calc(100vh-2rem)] flex-col gap-0 border border-foreground/10 bg-background/95 p-0 shadow-xl sm:max-w-4xl">
         <DialogHeader className="gap-3 border-b border-foreground/10 px-6 py-6">
